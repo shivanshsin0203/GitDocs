@@ -1,6 +1,12 @@
 import { Button } from "@/components/ui/button";
 
 function App() {
+  async function test(){
+    const res = await fetch("http://localhost:3000/api/generate", {
+      method: "POST",
+    });
+    console.log(res);
+  }
   return (
     <div className="relative bg-black w-screen flex flex-col items-center justify-center h-screen overflow-hidden">
       {/* Animated background glow */}
@@ -26,6 +32,7 @@ function App() {
           id="login-button"
           size="lg"
           className="relative mt-4 px-8 py-3 h-12 text-base font-semibold rounded-xl bg-gradient-to-r from-purple-600 via-pink-500 to-blue-500 text-white border-0 shadow-[0_0_30px_rgba(168,85,247,0.4)] hover:shadow-[0_0_50px_rgba(168,85,247,0.6)] hover:scale-105 transition-all duration-300 cursor-pointer"
+          onClick={test}
         >
           🚀 Login to GitDocs
         </Button>
