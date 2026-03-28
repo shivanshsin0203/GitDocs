@@ -1,0 +1,165 @@
+.material-symbols-outlined {
+  font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24;
+}
+
+.glass-panel {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(20px);
+}
+
+.hero-gradient {
+  background: radial-gradient(circle at 50% 0%, #171717 0%, #000000 70%);
+}
+
+.text-glow {
+  text-shadow: 0 0 30px rgba(255, 255, 255, 0.2);
+}
+
+@keyframes typing {
+  from {
+    width: 0;
+  }
+  to {
+    width: 100%;
+  }
+}
+
+@keyframes blink {
+  50% {
+    border-color: transparent;
+  }
+}
+
+.window-shadow {
+  box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.5),
+    0 18px 36px -18px rgba(0, 0, 0, 0.5);
+}
+
+/* Terminal animation loops spanning 10 seconds total */
+@keyframes t-line-1 {
+  0%,
+  4% {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  5%,
+  95% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  96%,
+  100% {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+}
+@keyframes t-line-2 {
+  0%,
+  14% {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  15%,
+  95% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  96%,
+  100% {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+}
+@keyframes t-line-3 {
+  0%,
+  29% {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  30%,
+  95% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  96%,
+  100% {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+}
+@keyframes t-line-4 {
+  0%,
+  44% {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  45%,
+  95% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  96%,
+  100% {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+}
+@keyframes t-line-5 {
+  0%,
+  59% {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  60%,
+  95% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  96%,
+  100% {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+}
+@keyframes t-line-6 {
+  0%,
+  74% {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  75%,
+  95% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  96%,
+  100% {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+}
+
+.tl-1 {
+  animation: t-line-1 10.5s infinite;
+  opacity: 0;
+}
+.tl-2 {
+  animation: t-line-2 10.5s infinite;
+  opacity: 0;
+}
+.tl-3 {
+  animation: t-line-3 10.5s infinite;
+  opacity: 0;
+}
+.tl-4 {
+  animation: t-line-4 10.5s infinite;
+  opacity: 0;
+}
+.tl-5 {
+  animation: t-line-5 10.5s infinite;
+  opacity: 0;
+}
+.tl-6 {
+  animation: t-line-6 10.5s infinite;
+  opacity: 0;
+}
