@@ -1,25 +1,26 @@
-import { useState, useCallback } from "react";
+import { useState } from "react";
+import { useMutation } from "@tanstack/react-query";
 import "./landing-page.css";
 
+const API_BASE = "http://localhost:3000/api/auth";
+
 function LandingPage() {
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isRedirecting, setIsRedirecting] = useState(false);
 
-  const openModal = useCallback(() => {
-    setIsModalOpen(true);
-    document.body.style.overflow = "hidden";
-  }, []);
+  const loginMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch(`${API_BASE}/login`);
+      if (!res.ok) throw new Error("Login request failed");
+      const data = await res.json();
+      return data.url as string;
+    },
+    onSuccess: (url) => {
+      setIsRedirecting(true);
+      window.location.href = url;
+    },
+  });
 
-  const closeModal = useCallback(() => {
-    setIsModalOpen(false);
-    document.body.style.overflow = "auto";
-  }, []);
-
-  const redirectToGitHub = useCallback((type: "read" | "write") => {
-    const CLIENT_ID = "YOUR_GITHUB_CLIENT_ID";
-    const SCOPE = type === "write" ? "repo" : "read:user";
-    const githubUrl = `https://github.com/login/oauth/authorize?client_id=${CLIENT_ID}&scope=${SCOPE}`;
-    window.location.href = githubUrl;
-  }, []);
+  const isLoading = loginMutation.isPending || isRedirecting;
 
   return (
     <div className="bg-black text-[#e2e2e2] font-inter selection:bg-white selection:text-black antialiased overflow-x-hidden">
@@ -66,13 +67,16 @@ function LandingPage() {
               </div>
               <div className="flex flex-col sm:flex-row items-center gap-6 pt-8">
                 <button
-                  onClick={openModal}
-                  className="group relative bg-white text-black px-10 py-5 rounded-lg font-bold flex items-center justify-center gap-3 hover:bg-neutral-200 transition-all active:scale-95 shadow-[0_20px_50px_rgba(255,255,255,0.1)]"
+                  onClick={() => loginMutation.mutate()}
+                  disabled={isLoading}
+                  className="group relative bg-white text-black px-10 py-5 rounded-lg font-bold flex items-center justify-center gap-3 hover:bg-neutral-200 transition-all active:scale-95 shadow-[0_20px_50px_rgba(255,255,255,0.1)] disabled:opacity-50 disabled:pointer-events-none"
                 >
-                  <span className="material-symbols-outlined text-xl">
-                    login
-                  </span>
-                  Login with GitHub
+                  {isLoading ? (
+                    <span className="material-symbols-outlined text-xl animate-spin">sync</span>
+                  ) : (
+                    <span className="material-symbols-outlined text-xl">login</span>
+                  )}
+                  {isLoading ? "Redirecting…" : "Login with GitHub"}
                   <div className="absolute -inset-1 bg-white/20 blur-xl group-hover:opacity-100 opacity-0 transition-opacity rounded-lg"></div>
                 </button>
                 <button className="bg-transparent border border-white/10 text-white px-10 py-5 rounded-lg font-bold hover:bg-white/5 transition-all active:scale-95">
@@ -266,16 +270,21 @@ function LandingPage() {
             </p>
             <div className="flex justify-center pt-8">
               <button
-                onClick={openModal}
-                className="bg-white text-black px-16 py-6 rounded-lg font-bold text-xl hover:bg-neutral-200 transition-all active:scale-95 flex items-center gap-4"
+                onClick={() => loginMutation.mutate()}
+                disabled={isLoading}
+                className="bg-white text-black px-16 py-6 rounded-lg font-bold text-xl hover:bg-neutral-200 transition-all active:scale-95 flex items-center gap-4 disabled:opacity-50 disabled:pointer-events-none"
               >
-                <span
-                  className="material-symbols-outlined"
-                  style={{ fontVariationSettings: "'FILL' 1" }}
-                >
-                  bolt
-                </span>
-                Start Generating Now
+                {isLoading ? (
+                  <span className="material-symbols-outlined animate-spin">sync</span>
+                ) : (
+                  <span
+                    className="material-symbols-outlined"
+                    style={{ fontVariationSettings: "'FILL' 1" }}
+                  >
+                    bolt
+                  </span>
+                )}
+                {isLoading ? "Redirecting…" : "Start Generating Now"}
               </button>
             </div>
           </div>
@@ -309,76 +318,7 @@ function LandingPage() {
         </div>
       </footer>
 
-      {/* Auth Modal */}
-      {isModalOpen && (
-        <div
-          className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/80 backdrop-blur-sm transition-opacity duration-300"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) closeModal();
-          }}
-        >
-          <div className="glass-panel border border-white/10 w-full max-w-2xl rounded-2xl overflow-hidden window-shadow transform transition-all">
-            <div className="p-8 border-b border-white/5 flex justify-between items-center">
-              <div>
-                <h3 className="text-2xl font-bold text-white tracking-tight">
-                  Choose Permissions
-                </h3>
-                <p className="text-[#a1a1a1] text-sm mt-1">
-                  Select how Gitdocs interacts with your repositories.
-                </p>
-              </div>
-              <button
-                onClick={closeModal}
-                className="text-white/40 hover:text-white transition-colors"
-              >
-                <span className="material-symbols-outlined">close</span>
-              </button>
-            </div>
 
-            <div className="grid md:grid-cols-2 gap-4 p-8">
-              <button
-                onClick={() => redirectToGitHub("read")}
-                className="group p-6 rounded-xl bg-white/5 border border-white/5 hover:border-white/20 hover:bg-white/[0.08] transition-all text-left flex flex-col h-full"
-              >
-                <div className="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center mb-6 group-hover:bg-white group-hover:text-black transition-all">
-                  <span className="material-symbols-outlined">visibility</span>
-                </div>
-                <h4 className="text-lg font-bold text-white mb-2">
-                  Read-Only
-                </h4>
-                <p className="text-sm text-[#a1a1a1] leading-relaxed flex-grow">
-                  Generate READMEs and copy the code. We{" "}
-                  <b>cannot</b> push changes to your repo.
-                </p>
-                <span className="mt-6 text-[10px] font-bold uppercase tracking-widest text-white/40 group-hover:text-white transition-colors">
-                  Select Read-Only
-                </span>
-              </button>
-
-              <button
-                onClick={() => redirectToGitHub("write")}
-                className="group p-6 rounded-xl bg-white/5 border border-white/5 hover:border-white/20 hover:bg-white/[0.08] transition-all text-left flex flex-col h-full"
-              >
-                <div className="w-10 h-10 rounded-lg bg-[#508eff]/20 text-[#508eff] flex items-center justify-center mb-6 group-hover:bg-[#508eff] group-hover:text-white transition-all">
-                  <span className="material-symbols-outlined">
-                    edit_square
-                  </span>
-                </div>
-                <h4 className="text-lg font-bold text-white mb-2">
-                  Write Access
-                </h4>
-                <p className="text-sm text-[#a1a1a1] leading-relaxed flex-grow">
-                  Directly commit and push generated documentation to your
-                  GitHub branches in one click.
-                </p>
-                <span className="mt-6 text-[10px] font-bold uppercase tracking-widest text-[#508eff] group-hover:brightness-125 transition-colors">
-                  Select Full Access
-                </span>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
