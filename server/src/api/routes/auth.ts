@@ -2,6 +2,7 @@ import express from 'express'
 import { db } from '../../db'
 import { users } from '../../db/schema'
 import { eq } from 'drizzle-orm'
+import { createJWT } from '../../lib/jwt'
 
 const router = express.Router()
 
@@ -80,8 +81,10 @@ router.get("/callback", async(_req, res) => {
         updatedAt:    new Date(),
       },
     })
+    const userId=await db.select().from(users).where(eq(users.username,profile.login))
+    const token=createJWT(userId[0].id)
 
-  res.redirect("http://localhost:5173")
+  res.cookie("token",token,{httpOnly:true,secure:true,sameSite:"lax",maxAge:60*60*24*3}).redirect("http://localhost:5173/dashboard")
 })
 
 export default router
