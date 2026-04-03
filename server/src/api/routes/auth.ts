@@ -87,4 +87,8 @@ router.get("/callback", async(_req, res) => {
   res.cookie("token",token,{httpOnly:true,secure:true,sameSite:"lax",maxAge:60*60*24*3}).redirect("http://localhost:5173/dashboard")
 })
 
+router.post("/logout", (_req, res) => {
+  res.clearCookie("token").json({ message: "Logged out successfully" })
+})
+
 export default router
