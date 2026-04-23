@@ -1,24 +1,45 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router";
+import { toast } from "react-toastify";
+
 interface User {
   avatar: string;
   name: string;
   email: string;
   username: string;
 }
+
 const Dashboard = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const avatarBtnRef = useRef<HTMLButtonElement>(null);
+  const isDropdownOpenRef = useRef(false);
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
 
-  const toggleDropdown = () => {
-    setIsDropdownOpen((prev) => !prev);
-  };
+  // Keep ref in sync so the stable click-outside listener reads current state
+  useEffect(() => {
+    isDropdownOpenRef.current = isDropdownOpen;
+  }, [isDropdownOpen]);
 
-  const handleLogout = async () => {
+  // Registered once — reads dropdown state via ref, never re-registers
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (!isDropdownOpenRef.current) return;
+      if (dropdownRef.current?.contains(event.target as Node)) return;
+      if (avatarBtnRef.current?.contains(event.target as Node)) return;
+      setIsDropdownOpen(false);
+    };
+    document.addEventListener("click", handleClickOutside);
+    return () => document.removeEventListener("click", handleClickOutside);
+  }, []);
+
+  const toggleDropdown = useCallback(() => {
+    setIsDropdownOpen((prev) => !prev);
+  }, []);
+
+  const handleLogout = useCallback(async () => {
     try {
       await fetch("http://localhost:3000/api/auth/logout", {
         method: "POST",
@@ -28,26 +49,8 @@ const Dashboard = () => {
     } catch (err) {
       console.error("Logout failed", err);
     }
-  };
+  }, [navigate]);
 
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        isDropdownOpen &&
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node) &&
-        avatarBtnRef.current &&
-        !avatarBtnRef.current.contains(event.target as Node)
-      ) {
-        setIsDropdownOpen(false);
-      }
-    };
-
-    document.addEventListener("click", handleClickOutside);
-    return () => {
-      document.removeEventListener("click", handleClickOutside);
-    };
-  }, [isDropdownOpen]);
   useEffect(() => {
     async function fetchUser() {
       setIsLoading(true);
@@ -56,6 +59,21 @@ const Dashboard = () => {
           credentials: "include",
         });
         if (res.status === 401) {
+          toast(
+            <div className="flex items-start gap-3">
+              <span className="material-symbols-outlined text-[#ffb4ab] text-[20px] mt-0.5">
+                lock
+              </span>
+              <div className="flex flex-col">
+                <span className="font-bold text-white text-sm tracking-wide">
+                  Not Authorized
+                </span>
+                <span className="text-white/50 text-xs mt-1">
+                  Please log in to access your workspace.
+                </span>
+              </div>
+            </div>,
+          );
           navigate("/");
           return;
         }
@@ -69,6 +87,7 @@ const Dashboard = () => {
     }
     fetchUser();
   }, [navigate]);
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-[#000000] flex flex-col items-center justify-center font-sans antialiased text-[#e2e2e2]">
@@ -102,40 +121,26 @@ const Dashboard = () => {
         .material-symbols-outlined {
             font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
         }
-        .window-shadow {
-            box-shadow: 0 30px 60px -12px rgba(0,0,0,0.5), 0 18px 36px -18px rgba(0,0,0,0.5);
-        }
-        ::-webkit-scrollbar {
-            width: 8px;
-        }
-        ::-webkit-scrollbar-track {
-            background: transparent;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 4px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: rgba(255, 255, 255, 0.2);
-        }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
       `}</style>
-      <div className="bg-[#000000] text-[#e2e2e2] font-sans selection:bg-white selection:text-black antialiased overflow-x-hidden min-h-screen flex flex-col pt-0">
+      <div className="bg-[#000000] text-[#e2e2e2] font-sans selection:bg-white selection:text-black antialiased overflow-x-hidden min-h-screen flex flex-col">
         <nav className="sticky top-0 z-50 bg-black/80 backdrop-blur-md border-b border-white/10">
           <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <span className="text-xl font-black tracking-tighter text-white">
-                  Gitdocs
-                </span>
-                <div className="h-6 w-[1px] bg-white/10 mx-2 transform rotate-12"></div>
-                <div className="flex items-center gap-2 text-sm font-medium text-white hover:text-white/80 transition-colors cursor-pointer">
-                  <img
-                    src="https://avatars.githubusercontent.com/u/9919?s=40&v=4"
-                    alt="User Org"
-                    className="w-5 h-5 rounded-full border border-white/20"
-                  />
-                  <span>{user?.username}</span>
-                </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xl font-black tracking-tighter text-white">
+                Gitdocs
+              </span>
+              <div className="h-6 w-[1px] bg-white/10 mx-2 transform rotate-12"></div>
+              <div className="flex items-center gap-2 text-sm font-medium text-white hover:text-white/80 transition-colors cursor-pointer">
+                <img
+                  src="https://avatars.githubusercontent.com/u/9919?s=40&v=4"
+                  alt="User Org"
+                  className="w-5 h-5 rounded-full border border-white/20"
+                />
+                <span>{user?.username}</span>
               </div>
             </div>
 
@@ -161,21 +166,19 @@ const Dashboard = () => {
 
                 <div
                   ref={dropdownRef}
-                  className={`absolute right-0 mt-2 w-48 bg-[#161b22] border border-white/10 rounded-xl shadow-2xl py-1 transform transition-all origin-top-right z-50 ${isDropdownOpen ? "opacity-100 scale-100 block" : "opacity-0 scale-95 hidden"}`}
+                  className={`absolute right-0 mt-2 w-48 bg-[#161b22] border border-white/10 rounded-xl shadow-2xl py-1 transform transition-all duration-200 origin-top-right z-50 ${
+                    isDropdownOpen
+                      ? "opacity-100 scale-100 pointer-events-auto"
+                      : "opacity-0 scale-95 pointer-events-none"
+                  }`}
                 >
                   <div className="px-4 py-3 border-b border-white/5">
-                    <p className="text-sm text-white font-medium">
-                      {user?.name}
-                    </p>
-                    <p className="text-xs text-[#a1a1a1] truncate">
-                      {user?.email}
-                    </p>
+                    <p className="text-sm text-white font-medium">{user?.name}</p>
+                    <p className="text-xs text-[#a1a1a1] truncate">{user?.email}</p>
                   </div>
                   <div className="py-1">
                     <button className="w-full text-left px-4 py-2 text-sm text-white/70 hover:text-white hover:bg-white/5 flex items-center gap-2 transition-colors">
-                      <span className="material-symbols-outlined text-[16px]">
-                        settings
-                      </span>
+                      <span className="material-symbols-outlined text-[16px]">settings</span>
                       Settings
                     </button>
                   </div>
@@ -184,9 +187,7 @@ const Dashboard = () => {
                       onClick={handleLogout}
                       className="w-full text-left px-4 py-2 text-sm text-[#ffb4ab] hover:bg-[#ffb4ab]/10 flex items-center gap-2 transition-colors"
                     >
-                      <span className="material-symbols-outlined text-[16px]">
-                        logout
-                      </span>
+                      <span className="material-symbols-outlined text-[16px]">logout</span>
                       Log Out
                     </button>
                   </div>
@@ -196,22 +197,13 @@ const Dashboard = () => {
           </div>
 
           <div className="max-w-7xl mx-auto px-6 flex gap-6 text-sm">
-            <a
-              href="#"
-              className="pb-3 border-b-2 border-white text-white font-medium"
-            >
+            <a href="#" className="pb-3 border-b-2 border-white text-white font-medium">
               Overview
             </a>
-            <a
-              href="#"
-              className="pb-3 border-b-2 border-transparent text-white/50 hover:text-white transition-colors"
-            >
+            <a href="#" className="pb-3 border-b-2 border-transparent text-white/50 hover:text-white transition-colors">
               Integrations
             </a>
-            <a
-              href="#"
-              className="pb-3 border-b-2 border-transparent text-white/50 hover:text-white transition-colors"
-            >
+            <a href="#" className="pb-3 border-b-2 border-transparent text-white/50 hover:text-white transition-colors">
               Settings
             </a>
           </div>
@@ -232,22 +224,20 @@ const Dashboard = () => {
               </div>
 
               <button className="bg-white text-black px-5 py-2.5 rounded-lg font-bold flex items-center justify-center gap-2 hover:bg-neutral-200 transition-all active:scale-95 text-sm whitespace-nowrap shadow-[0_0_20px_rgba(255,255,255,0.1)]">
-                <span className="material-symbols-outlined text-[18px]">
-                  add
-                </span>
+                <span className="material-symbols-outlined text-[18px]">add</span>
                 Add New
               </button>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              <div className="group bg-[#0d1117] rounded-xl border border-white/10 hover:border-white/30 transition-all duration-300 flex flex-col h-48 cursor-pointer relative overflow-hidden">
+              {/* Card 1 */}
+              <div className="group bg-[#0d1117] rounded-xl border border-white/10 hover:border-white/25 transition-all duration-300 flex flex-col h-48 cursor-pointer relative overflow-hidden">
+                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-gradient-to-br from-white/[0.04] to-transparent pointer-events-none"></div>
                 <div className="p-6 flex-grow flex flex-col">
                   <div className="flex justify-between items-start mb-3">
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white">
-                        <span className="material-symbols-outlined text-[16px]">
-                          terminal
-                        </span>
+                      <div className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white group-hover:border-white/20 transition-colors">
+                        <span className="material-symbols-outlined text-[16px]">terminal</span>
                       </div>
                       <div>
                         <h3 className="font-bold text-white tracking-tight flex items-center gap-2">
@@ -256,15 +246,12 @@ const Dashboard = () => {
                             arrow_outward
                           </span>
                         </h3>
-                        <p className="text-xs text-white/40 font-mono">
-                          octocat/awesome-project
-                        </p>
+                        <p className="text-xs text-white/40 font-mono">octocat/awesome-project</p>
                       </div>
                     </div>
                   </div>
                   <p className="text-sm text-[#a1a1a1] font-light flex-grow mt-2 line-clamp-2">
-                    A highly optimized AI tool for generating automated
-                    documentation workflows.
+                    A highly optimized AI tool for generating automated documentation workflows.
                   </p>
                 </div>
                 <div className="px-6 py-4 border-t border-white/5 bg-white/[0.02] flex items-center justify-between text-xs text-white/50">
@@ -273,22 +260,20 @@ const Dashboard = () => {
                     <span className="font-medium text-white/80">Synced</span>
                   </div>
                   <div className="flex items-center gap-1 font-mono">
-                    <span className="material-symbols-outlined text-[14px]">
-                      commit
-                    </span>
+                    <span className="material-symbols-outlined text-[14px]">commit</span>
                     4a2b8c9 • 2h ago
                   </div>
                 </div>
               </div>
 
-              <div className="group bg-[#0d1117] rounded-xl border border-white/10 hover:border-white/30 transition-all duration-300 flex flex-col h-48 cursor-pointer relative overflow-hidden">
+              {/* Card 2 */}
+              <div className="group bg-[#0d1117] rounded-xl border border-white/10 hover:border-[#ffbd2e]/30 transition-all duration-300 flex flex-col h-48 cursor-pointer relative overflow-hidden">
+                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-gradient-to-br from-[#ffbd2e]/[0.05] to-transparent pointer-events-none"></div>
                 <div className="p-6 flex-grow flex flex-col">
                   <div className="flex justify-between items-start mb-3">
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-[#ffbd2e]">
-                        <span className="material-symbols-outlined text-[16px]">
-                          javascript
-                        </span>
+                      <div className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-[#ffbd2e] group-hover:border-[#ffbd2e]/30 transition-colors">
+                        <span className="material-symbols-outlined text-[16px]">javascript</span>
                       </div>
                       <div>
                         <h3 className="font-bold text-white tracking-tight flex items-center gap-2">
@@ -297,41 +282,34 @@ const Dashboard = () => {
                             arrow_outward
                           </span>
                         </h3>
-                        <p className="text-xs text-white/40 font-mono">
-                          octocat/react-ui-components
-                        </p>
+                        <p className="text-xs text-white/40 font-mono">octocat/react-ui-components</p>
                       </div>
                     </div>
                   </div>
                   <p className="text-sm text-[#a1a1a1] font-light flex-grow mt-2 line-clamp-2">
-                    A comprehensive library of accessible, reusable React
-                    components built with Tailwind.
+                    A comprehensive library of accessible, reusable React components built with Tailwind.
                   </p>
                 </div>
                 <div className="px-6 py-4 border-t border-white/5 bg-white/[0.02] flex items-center justify-between text-xs text-white/50">
                   <div className="flex items-center gap-2 text-[#aec6ff]">
-                    <span className="material-symbols-outlined text-[14px] animate-spin">
-                      sync
-                    </span>
+                    <span className="material-symbols-outlined text-[14px] animate-spin">sync</span>
                     <span className="font-medium">Drafting README...</span>
                   </div>
                   <div className="flex items-center gap-1 font-mono">
-                    <span className="material-symbols-outlined text-[14px]">
-                      commit
-                    </span>
+                    <span className="material-symbols-outlined text-[14px]">commit</span>
                     8f1e9d2 • Just now
                   </div>
                 </div>
               </div>
 
-              <div className="group bg-[#0d1117] rounded-xl border border-white/10 hover:border-white/30 transition-all duration-300 flex flex-col h-48 cursor-pointer relative overflow-hidden">
+              {/* Card 3 */}
+              <div className="group bg-[#0d1117] rounded-xl border border-white/10 hover:border-[#508eff]/30 transition-all duration-300 flex flex-col h-48 cursor-pointer relative overflow-hidden">
+                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-gradient-to-br from-[#508eff]/[0.05] to-transparent pointer-events-none"></div>
                 <div className="p-6 flex-grow flex flex-col">
                   <div className="flex justify-between items-start mb-3">
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-[#508eff]">
-                        <span className="material-symbols-outlined text-[16px]">
-                          data_object
-                        </span>
+                      <div className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-[#508eff] group-hover:border-[#508eff]/30 transition-colors">
+                        <span className="material-symbols-outlined text-[16px]">data_object</span>
                       </div>
                       <div>
                         <h3 className="font-bold text-white tracking-tight flex items-center gap-2">
@@ -340,15 +318,12 @@ const Dashboard = () => {
                             arrow_outward
                           </span>
                         </h3>
-                        <p className="text-xs text-white/40 font-mono">
-                          octocat/python-data-pipeline
-                        </p>
+                        <p className="text-xs text-white/40 font-mono">octocat/python-data-pipeline</p>
                       </div>
                     </div>
                   </div>
                   <p className="text-sm text-[#a1a1a1] font-light flex-grow mt-2 line-clamp-2">
-                    ETL pipeline scripts and machine learning model training
-                    configurations.
+                    ETL pipeline scripts and machine learning model training configurations.
                   </p>
                 </div>
                 <div className="px-6 py-4 border-t border-white/5 bg-white/[0.02] flex items-center justify-between text-xs text-white/50">
@@ -357,9 +332,7 @@ const Dashboard = () => {
                     <span className="font-medium text-white/80">Synced</span>
                   </div>
                   <div className="flex items-center gap-1 font-mono">
-                    <span className="material-symbols-outlined text-[14px]">
-                      commit
-                    </span>
+                    <span className="material-symbols-outlined text-[14px]">commit</span>
                     1c4a7b9 • 5d ago
                   </div>
                 </div>
@@ -374,16 +347,10 @@ const Dashboard = () => {
               Gitdocs
             </div>
             <div className="flex gap-6">
-              <a
-                className="text-xs font-bold uppercase tracking-[0.2em] text-white/40 hover:text-white transition-colors"
-                href="#"
-              >
+              <a className="text-xs font-bold uppercase tracking-[0.2em] text-white/40 hover:text-white transition-colors" href="#">
                 Support
               </a>
-              <a
-                className="text-xs font-bold uppercase tracking-[0.2em] text-white/40 hover:text-white transition-colors"
-                href="#"
-              >
+              <a className="text-xs font-bold uppercase tracking-[0.2em] text-white/40 hover:text-white transition-colors" href="#">
                 Docs
               </a>
             </div>

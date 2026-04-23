@@ -163,3 +163,31 @@
   animation: t-line-6 10.5s infinite;
   opacity: 0;
 }
+
+/* Hero entry animations */
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.hero-fade-up {
+  animation: fade-up 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+  opacity: 0;
+}
+
+.delay-1 { animation-delay: 60ms; }
+.delay-2 { animation-delay: 200ms; }
+.delay-3 { animation-delay: 380ms; }
+.delay-4 { animation-delay: 560ms; }
+
+/* Dot grid background */
+.dot-grid {
+  background-image: radial-gradient(rgba(255, 255, 255, 0.12) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
