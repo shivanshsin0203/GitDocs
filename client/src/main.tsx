@@ -5,6 +5,7 @@ import App from './App.tsx'
 import { BrowserRouter, Route, Routes } from 'react-router'
 import Test from './Test.tsx'
 import Dashboard from './Dashboard.tsx'
+import ListRepos from './ListRepos.tsx'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ToastContainer } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
@@ -26,6 +27,7 @@ createRoot(document.getElementById('root')!).render(
           <Route path="/" element={<App />} />
           <Route path='/test' element={<Test/>}/>
           <Route path='/dashboard' element={<Dashboard/>}/>
+          <Route path='/listrepos' element={<ListRepos/>}/>
         </Routes>
       </BrowserRouter>
     </QueryClientProvider>
