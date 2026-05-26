@@ -38,7 +38,7 @@ function LandingPage() {
 
   const loginMutation = useMutation({
     mutationFn: async () => {
-      const res = await fetch(`${API_BASE}/login`);
+      const res = await fetch(`${API_BASE}/login`, { credentials: 'include' });
       if (!res.ok) throw new Error("Login request failed");
       const data = await res.json();
       return data.url as string;

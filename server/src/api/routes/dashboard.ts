@@ -18,7 +18,7 @@ router.get("/listrepos",authenticate,async(req,res)=>{
         if(!user.length || !user[0].githubToken){
             return res.status(404).json({error:"GitHub token not found"})
         }
-        const repos: any[]=[]
+        const repos:any[]=[]
         let page=1
         while(true){
             const response=await fetch(`https://api.github.com/user/repos?per_page=100&page=${page}`,{
