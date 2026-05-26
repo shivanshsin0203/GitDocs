@@ -12,7 +12,17 @@
 }
 
 .text-glow {
-  text-shadow: 0 0 30px rgba(255, 255, 255, 0.2);
+  text-shadow:
+    0 0 30px rgba(255, 255, 255, 0.2),
+    0 0 80px rgba(39, 201, 63, 0.08);
+}
+
+.brand-glow {
+  box-shadow: 0 20px 50px rgba(39, 201, 63, 0.18);
+}
+
+.brand-glow-sm {
+  box-shadow: 0 0 20px rgba(39, 201, 63, 0.18);
 }
 
 @keyframes typing {

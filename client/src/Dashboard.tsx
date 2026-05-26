@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router";
 import { useUser } from "./hooks/useUser.tsx";
 import Navbar from "./components/Navbar";
+import Logo from "./components/Logo";
 
 const Dashboard = () => {
   const { data: user, isLoading } = useUser();
@@ -8,19 +9,20 @@ const Dashboard = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#000000] flex flex-col items-center justify-center font-sans antialiased text-[#e2e2e2]">
+      <div className="min-h-screen bg-[#000000] flex flex-col items-center justify-center font-sans antialiased text-[#e2e2e2] selection:bg-[#27c93f] selection:text-black">
         <div className="flex flex-col items-center gap-8 translate-y-[-10%]">
           <div className="relative flex items-center justify-center w-20 h-20">
-            <div className="w-full h-full rounded-full border-[3px] border-white/5 border-t-white/80 animate-[spin_1s_cubic-bezier(0.5,0,0.5,1)_infinite] absolute"></div>
-            <div className="w-14 h-14 rounded-full border-[3px] border-white/5 border-b-white/50 animate-[spin_1.5s_linear_infinite_reverse] absolute"></div>
-            <span className="text-2xl font-black tracking-tighter text-white z-10 animate-pulse">
-              G
+            <div className="w-full h-full rounded-full border-[3px] border-white/5 border-t-[#27c93f]/80 animate-[spin_1s_cubic-bezier(0.5,0,0.5,1)_infinite] absolute"></div>
+            <div className="w-14 h-14 rounded-full border-[3px] border-white/5 border-b-white/30 animate-[spin_1.5s_linear_infinite_reverse] absolute"></div>
+            <span
+              className="text-3xl font-mono leading-none text-[#27c93f] z-10 animate-pulse"
+              style={{ textShadow: "0 0 18px rgba(39,201,63,0.35)" }}
+            >
+              ❯
             </span>
           </div>
           <div className="flex flex-col items-center gap-2">
-            <h2 className="text-white/90 font-medium tracking-wide text-lg">
-              Gitdocs
-            </h2>
+            <Logo size="sm" />
             <div className="flex items-center gap-2">
               <span className="w-1.5 h-1.5 bg-[#27c93f] rounded-full animate-pulse shadow-[0_0_8px_#27c93f]"></span>
               <p className="text-white/40 text-xs font-mono">
@@ -44,7 +46,7 @@ const Dashboard = () => {
         ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
       `}</style>
-      <div className="bg-[#000000] text-[#e2e2e2] font-sans selection:bg-white selection:text-black antialiased overflow-x-hidden min-h-screen flex flex-col">
+      <div className="bg-[#000000] text-[#e2e2e2] font-sans selection:bg-[#27c93f] selection:text-black antialiased overflow-x-hidden min-h-screen flex flex-col">
         <Navbar user={user ?? null} />
 
         <main className="flex-grow pt-12 pb-24">
@@ -57,11 +59,11 @@ const Dashboard = () => {
                 <input
                   type="text"
                   placeholder="Search repositories..."
-                  className="w-full bg-[#0d1117] border border-white/10 text-white text-sm rounded-lg focus:ring-1 focus:ring-white/30 focus:border-white/30 block pl-10 p-2.5 transition-all placeholder-white/30"
+                  className="w-full bg-[#0d1117] border border-white/10 text-white text-sm rounded-lg focus:ring-1 focus:ring-[#27c93f]/40 focus:border-[#27c93f]/40 block pl-10 p-2.5 transition-all placeholder-white/30"
                 />
               </div>
 
-              <button onClick={() => navigate('/listrepos')} className="bg-white text-black px-5 py-2.5 rounded-lg font-bold flex items-center justify-center gap-2 hover:bg-neutral-200 transition-all active:scale-95 text-sm whitespace-nowrap shadow-[0_0_20px_rgba(255,255,255,0.1)]">
+              <button onClick={() => navigate('/listrepos')} className="bg-white text-black px-5 py-2.5 rounded-lg font-bold flex items-center justify-center gap-2 hover:bg-neutral-200 transition-all active:scale-95 text-sm whitespace-nowrap shadow-[0_0_20px_rgba(39,201,63,0.18)]">
                 <span className="material-symbols-outlined text-[18px]">add</span>
                 Add New
               </button>
@@ -181,9 +183,7 @@ const Dashboard = () => {
 
         <footer className="w-full border-t border-white/5 bg-black mt-auto">
           <div className="flex justify-between items-center px-6 py-8 max-w-7xl mx-auto">
-            <div className="text-sm font-medium text-white/40 tracking-tighter">
-              Gitdocs
-            </div>
+            <Logo size="sm" className="opacity-60" />
             <div className="flex gap-6">
               <a className="text-xs font-bold uppercase tracking-[0.2em] text-white/40 hover:text-white transition-colors" href="#">
                 Support

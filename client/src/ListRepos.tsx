@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useUser } from "./hooks/useUser.tsx";
 import Navbar from "./components/Navbar";
+import Logo from "./components/Logo";
 
 interface Repo {
     id: number;
@@ -138,14 +139,22 @@ const ListRepos = () => {
                 }
             `}</style>
 
-            <div className="bg-[#000000] text-[#e2e2e2] font-sans selection:bg-white selection:text-black antialiased overflow-x-hidden min-h-screen flex flex-col">
+            <div className="bg-[#000000] text-[#e2e2e2] font-sans selection:bg-[#27c93f] selection:text-black antialiased overflow-x-hidden min-h-screen flex flex-col">
                 <Navbar user={user ?? null} />
 
                 <main className="flex-grow pt-8 sm:pt-16 pb-16 sm:pb-24">
                     <div className="max-w-3xl mx-auto px-4 sm:px-6">
 
                         <div className="mb-6 sm:mb-8 text-center sm:text-left">
-                            <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight mb-2">Import Git Repository</h1>
+                            <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight mb-2 flex items-center gap-3 justify-center sm:justify-start">
+                                <span
+                                    className="font-mono text-[#27c93f] leading-none"
+                                    style={{ textShadow: "0 0 18px rgba(39,201,63,0.35)" }}
+                                >
+                                    ❯
+                                </span>
+                                Import Git Repository
+                            </h1>
                             <p className="text-sm text-[#a1a1a1]">Select a repository from your GitHub account to generate documentation.</p>
                         </div>
 
@@ -243,7 +252,7 @@ const ListRepos = () => {
 
                 <footer className="w-full border-t border-white/5 bg-black mt-auto">
                     <div className="flex justify-between items-center px-6 py-8 max-w-7xl mx-auto">
-                        <div className="text-sm font-medium text-white/40 tracking-tighter">Gitdocs</div>
+                        <Logo size="sm" className="opacity-60" />
                         <div className="flex gap-6">
                             <a className="text-xs font-bold uppercase tracking-[0.2em] text-white/40 hover:text-white transition-colors" href="#">Support</a>
                             <a className="text-xs font-bold uppercase tracking-[0.2em] text-white/40 hover:text-white transition-colors" href="#">Docs</a>

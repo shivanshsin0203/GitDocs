@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import type { User } from "../hooks/useUser.tsx";
+import Logo from "./Logo";
 
 interface NavbarProps {
   user: User | null | undefined;
@@ -54,13 +55,10 @@ const Navbar = ({ user }: NavbarProps) => {
     <nav className="sticky top-0 z-50 bg-black/80 backdrop-blur-md border-b border-white/10">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 h-14 sm:h-16 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <a
-            href="#"
-            onClick={(e) => { e.preventDefault(); navigate("/dashboard"); }}
-            className="text-xl font-black tracking-tighter text-white hover:text-white/80 transition-colors"
-          >
-            Gitdocs
-          </a>
+          <Logo
+            size="md"
+            onClick={() => navigate("/dashboard")}
+          />
           <div className="h-6 w-[1px] bg-white/10 mx-2 transform rotate-12"></div>
           {isDashboard ? (
             <div className="flex items-center gap-2 text-sm font-medium text-white hover:text-white/80 transition-colors cursor-pointer">
@@ -98,7 +96,7 @@ const Navbar = ({ user }: NavbarProps) => {
             <button
               ref={avatarBtnRef}
               onClick={toggleDropdown}
-              className="w-8 h-8 rounded-full overflow-hidden border border-white/20 hover:border-white/50 transition-all focus:outline-none focus:ring-2 focus:ring-white/20"
+              className="w-8 h-8 rounded-full overflow-hidden border border-white/20 hover:border-[#27c93f]/50 transition-all focus:outline-none focus:ring-2 focus:ring-[#27c93f]/40"
             >
               {user?.avatar && (
                 <img src={user.avatar} alt="Avatar" className="w-full h-full object-cover" />

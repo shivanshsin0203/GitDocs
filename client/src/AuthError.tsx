@@ -51,7 +51,7 @@ function AuthError() {
   const message = REASON_MESSAGES[reason] ?? DEFAULT_MESSAGE;
 
   return (
-    <div className="bg-black text-[#e2e2e2] font-sans selection:bg-white selection:text-black antialiased min-h-screen flex items-center justify-center px-6">
+    <div className="bg-black text-[#e2e2e2] font-sans selection:bg-[#27c93f] selection:text-black antialiased min-h-screen flex items-center justify-center px-6">
       <div className="max-w-md w-full text-center space-y-8">
         <span
           className="material-symbols-outlined text-[40px] text-[#ff5f56]"

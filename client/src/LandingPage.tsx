@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { useNavigate } from "react-router";
+import Logo from "./components/Logo";
 import "./landing-page.css";
 
 const API_BASE = "http://localhost:3000/api/auth";
@@ -22,7 +23,7 @@ const CAPABILITIES = [
   },
   {
     icon: "auto_fix_high",
-    title: "Profile Coolifier",
+    title: "Profile Builder",
     desc: "Transform your static GitHub profile into a dynamic landing page with real-time stats, tech stacks, and animated components.",
   },
   {
@@ -52,40 +53,35 @@ function LandingPage() {
   const isLoading = loginMutation.isPending || isRedirecting;
 
   return (
-    <div className="bg-black text-[#e2e2e2] font-sans selection:bg-white selection:text-black antialiased overflow-x-hidden">
+    <div className="bg-black text-[#e2e2e2] font-sans selection:bg-[#27c93f] selection:text-black antialiased overflow-x-hidden">
       <main>
         {/* Hero Section */}
         <section className="relative pt-20 pb-40 hero-gradient min-h-screen flex flex-col items-center justify-center overflow-hidden">
           <div className="absolute inset-0 pointer-events-none overflow-hidden">
             <div className="absolute inset-0 dot-grid opacity-[0.35]"></div>
             <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-white/[0.04] blur-[150px] rounded-full"></div>
-            <div className="absolute bottom-[20%] right-[-10%] w-[40%] h-[40%] bg-white/[0.03] blur-[150px] rounded-full"></div>
+            <div className="absolute bottom-[20%] right-[-10%] w-[40%] h-[40%] bg-[#27c93f]/[0.06] blur-[150px] rounded-full"></div>
           </div>
           <div className="max-w-7xl mx-auto px-6 relative z-10 text-center">
             <div className="flex flex-col items-center space-y-12">
-              <div className="text-2xl font-black tracking-tighter text-white mb-4 hero-fade-up delay-1">
-                Gitdocs
+              <div className="mb-4 hero-fade-up delay-1">
+                <Logo size="lg" />
               </div>
               <div className="space-y-6 max-w-4xl hero-fade-up delay-2">
-                <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 text-[10px] font-bold uppercase tracking-[0.2em] text-[#a1a1a1]">
-                  <span
-                    className="material-symbols-outlined text-[14px] text-white"
-                    style={{ fontVariationSettings: "'FILL' 1" }}
-                  >
-                    auto_awesome
-                  </span>
-                  Engineered for the elite
+                <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#27c93f]/10 border border-[#27c93f]/25 text-[10px] font-bold uppercase tracking-[0.2em] text-[#27c93f]">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#27c93f] animate-pulse shadow-[0_0_8px_#27c93f]"></span>
+                  AI README engine
                 </span>
                 <h1 className="text-6xl md:text-[9rem] font-black text-white leading-[0.9] tracking-tighter text-glow">
                   READMEs <br />
-                  <span className="text-[#a1a1a1] opacity-40 italic font-medium">
+                  <span className="text-[#a1a1a1] opacity-60 italic font-medium">
                     Redefined.
                   </span>
                 </h1>
                 <p className="text-xl md:text-2xl text-[#a1a1a1] max-w-3xl mx-auto leading-relaxed font-light">
-                  The AI engine that crafts high-conversion READMEs and{" "}
+                  The AI engine that writes complete READMEs and{" "}
                   <span className="text-white border-b border-white/30">
-                    "coolifies"
+                    rebuilds
                   </span>{" "}
                   your GitHub profile in one click.
                   <span className="block mt-2 font-normal text-white/80">
@@ -98,7 +94,7 @@ function LandingPage() {
                 <button
                   onClick={() => loginMutation.mutate()}
                   disabled={isLoading}
-                  className="group relative bg-white text-black px-10 py-5 rounded-lg font-bold flex items-center justify-center gap-3 hover:bg-neutral-200 transition-all active:scale-95 shadow-[0_20px_50px_rgba(255,255,255,0.1)] disabled:opacity-50 disabled:pointer-events-none"
+                  className="group relative bg-white text-black px-10 py-5 rounded-lg font-bold flex items-center justify-center gap-3 hover:bg-neutral-200 transition-all active:scale-95 brand-glow disabled:opacity-50 disabled:pointer-events-none"
                 >
                   {isLoading ? (
                     <span className="material-symbols-outlined text-xl animate-spin">sync</span>
@@ -106,7 +102,7 @@ function LandingPage() {
                     <span className="material-symbols-outlined text-xl">login</span>
                   )}
                   {isLoading ? "Redirecting…" : "Login with GitHub"}
-                  <div className="absolute -inset-1 bg-white/20 blur-xl group-hover:opacity-100 opacity-0 transition-opacity rounded-lg"></div>
+                  <div className="absolute -inset-1 bg-[#27c93f]/25 blur-xl group-hover:opacity-100 opacity-0 transition-opacity rounded-lg"></div>
                 </button>
                 <button
                   className="bg-transparent border border-white/10 text-white px-10 py-5 rounded-lg font-bold hover:bg-white/5 transition-all active:scale-95"
@@ -134,7 +130,7 @@ function LandingPage() {
                     </div>
                   </div>
 
-                  <div className="p-6 md:p-8 space-y-4 text-left h-[340px] bg-[#0d1117] relative">
+                  <div className="p-6 md:p-8 space-y-4 text-left min-h-[380px] bg-[#0d1117] relative">
                     <div className="tl-1 flex items-center gap-3 text-white/70">
                       <span className="text-[#508eff]">~</span>
                       <span className="text-[#27c93f]">❯</span>
@@ -183,10 +179,11 @@ function LandingPage() {
                       <span className="material-symbols-outlined text-[18px]">
                         check_circle
                       </span>
-                      <span>Documentation successfully generated! ✨</span>
+                      <span>Documentation successfully generated!</span>
                     </div>
 
-                    <div className="absolute bottom-6 left-6 flex items-center gap-2">
+                    <div className="tl-6 flex items-center gap-3 text-white/60 pt-2">
+                      <span className="text-[#508eff]">~</span>
                       <span className="text-[#27c93f]">❯</span>
                       <div className="w-2 h-5 bg-white/70 animate-pulse"></div>
                     </div>
@@ -200,15 +197,16 @@ function LandingPage() {
         {/* Language Compatibility Section */}
         <section className="py-24 border-y border-white/5 bg-black overflow-hidden relative">
           <div className="absolute inset-0 pointer-events-none">
-            <div className="absolute inset-0 bg-gradient-to-r from-[#508eff]/20 via-[#dbb8ff]/15 to-[#27c93f]/15 blur-[80px] opacity-30"></div>
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#27c93f]/10 to-transparent blur-[80px] opacity-50"></div>
           </div>
           <div className="max-w-7xl mx-auto px-6 relative z-10">
             <div className="text-center mb-12">
-              <h3 className="text-xs font-bold uppercase tracking-[0.4em] text-white/40 mb-4">
-                Unmatched Compatibility
+              <h3 className="text-xs font-bold uppercase tracking-[0.4em] text-white/40 mb-4 flex items-center justify-center gap-2">
+                <span className="font-mono text-[#27c93f] not-italic normal-case tracking-normal">❯</span>
+                Built for any stack
               </h3>
               <p className="text-2xl text-white font-light">
-                Deep codebase analysis for every stack.
+                Deep codebase analysis across every language.
               </p>
             </div>
             <div className="flex flex-wrap justify-center items-center gap-6 md:gap-16">
@@ -247,20 +245,21 @@ function LandingPage() {
         <section className="py-40 px-6 bg-black relative">
           <div className="max-w-7xl mx-auto">
             <div className="mb-24 space-y-6">
-              <h2 className="text-[11px] font-bold uppercase tracking-[0.4em] text-white/40">
+              <h2 className="text-[11px] font-bold uppercase tracking-[0.4em] text-white/40 flex items-center gap-2">
+                <span className="font-mono text-[#27c93f] tracking-normal">❯</span>
                 Capabilities
               </h2>
               <h3 className="text-5xl md:text-7xl font-black text-white tracking-tight leading-[0.95]">
-                Built for high-performance <br /> engineering teams.
+                Built for developers <br /> who ship.
               </h3>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
               {CAPABILITIES.map((card) => (
                 <div
                   key={card.title}
-                  className="group p-10 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-white/20 transition-all duration-500 flex flex-col h-full"
+                  className="group p-10 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-[#27c93f]/25 transition-all duration-500 flex flex-col h-full"
                 >
-                  <div className="w-14 h-14 rounded-lg bg-white/5 flex items-center justify-center mb-10 group-hover:bg-white text-white group-hover:text-black transition-all duration-300">
+                  <div className="w-14 h-14 rounded-lg bg-white/5 flex items-center justify-center mb-10 group-hover:bg-[#27c93f] text-white group-hover:text-black transition-all duration-300">
                     <span className="material-symbols-outlined">
                       {card.icon}
                     </span>
@@ -272,7 +271,7 @@ function LandingPage() {
                     {card.desc}
                   </p>
                   <div className="w-full h-[1px] bg-white/10 overflow-hidden">
-                    <div className="h-full bg-white w-0 transition-all duration-700 group-hover:w-full"></div>
+                    <div className="h-full bg-[#27c93f] w-0 transition-all duration-700 group-hover:w-full"></div>
                   </div>
                 </div>
               ))}
@@ -280,36 +279,30 @@ function LandingPage() {
           </div>
         </section>
 
-        {/* CTA Section */}
-        <section className="py-40 relative overflow-hidden bg-black">
-          <div className="absolute inset-0 bg-gradient-to-t from-white/[0.05] to-transparent"></div>
-          <div className="max-w-5xl mx-auto px-6 relative z-10 text-center space-y-12">
-            <h2 className="text-5xl md:text-8xl font-black text-white tracking-tighter leading-none">
-              Ready to evolve <br /> your docs?
-            </h2>
-            <p className="text-2xl text-white/40 max-w-2xl mx-auto font-light leading-relaxed">
-              Join over 10,000 developers building the future of open-source
-              documentation with Gitdocs.
-            </p>
-            <div className="flex justify-center pt-8">
-              <button
-                onClick={() => loginMutation.mutate()}
-                disabled={isLoading}
-                className="bg-white text-black px-16 py-6 rounded-lg font-bold text-xl hover:bg-neutral-200 transition-all active:scale-95 flex items-center gap-4 disabled:opacity-50 disabled:pointer-events-none"
-              >
-                {isLoading ? (
-                  <span className="material-symbols-outlined animate-spin">sync</span>
-                ) : (
-                  <span
-                    className="material-symbols-outlined"
-                    style={{ fontVariationSettings: "'FILL' 1" }}
-                  >
-                    bolt
-                  </span>
-                )}
-                {isLoading ? "Redirecting…" : "Start Generating Now"}
-              </button>
+        {/* Slim final CTA */}
+        <section className="py-20 border-t border-white/5 bg-black relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-t from-[#27c93f]/[0.04] to-transparent pointer-events-none"></div>
+          <div className="max-w-7xl mx-auto px-6 relative z-10 flex flex-col sm:flex-row items-center justify-between gap-6">
+            <div>
+              <p className="text-2xl md:text-3xl font-black text-white tracking-tighter">
+                Generate your first README.
+              </p>
+              <p className="text-sm text-white/40 mt-1">
+                Connect a GitHub repo, get a complete README in under a minute.
+              </p>
             </div>
+            <button
+              onClick={() => loginMutation.mutate()}
+              disabled={isLoading}
+              className="group relative bg-white text-black px-8 py-3.5 rounded-lg font-bold flex items-center justify-center gap-3 hover:bg-neutral-200 transition-all active:scale-95 brand-glow-sm disabled:opacity-50 disabled:pointer-events-none whitespace-nowrap"
+            >
+              {isLoading ? (
+                <span className="material-symbols-outlined text-xl animate-spin">sync</span>
+              ) : (
+                <span className="material-symbols-outlined text-xl">login</span>
+              )}
+              {isLoading ? "Redirecting…" : "Continue with GitHub"}
+            </button>
           </div>
         </section>
       </main>
@@ -318,11 +311,9 @@ function LandingPage() {
       <footer className="w-full border-t border-white/5 bg-black">
         <div className="flex flex-col md:flex-row justify-between items-center px-8 py-20 max-w-7xl mx-auto gap-12">
           <div className="space-y-6 text-center md:text-left">
-            <div className="text-2xl font-black text-white tracking-tighter">
-              Gitdocs AI
-            </div>
+            <Logo size="md" />
             <p className="text-xs font-bold uppercase tracking-[0.2em] text-white/40">
-              © 2024 Gitdocs AI. Built for the modern architect.
+              © 2024 gitdocs. Built for developers.
             </p>
           </div>
           <div className="flex flex-wrap justify-center gap-10">
