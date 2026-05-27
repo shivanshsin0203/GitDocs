@@ -1,8 +1,9 @@
 import { Router } from "express";
 import { authenticate } from "../middleware/auth";
 import { db } from "../../db";
-import { users } from "../../db/schema";
-import { eq } from "drizzle-orm";
+import { users, projects } from "../../db/schema";
+import { eq, desc } from "drizzle-orm";
+import { redis } from "../../lib/redis";
 
 const router = Router();
 
@@ -49,6 +50,40 @@ router.get("/listrepos",authenticate,async(req,res)=>{
         res.json({message:"success",repos:repoList})
     } catch(err){
         res.status(500).json({error:"Internal server error"})
+    }
+})
+
+router.get("/projects", authenticate, async (req, res) => {
+    try {
+        const rows = await db
+            .select()
+            .from(projects)
+            .where(eq(projects.userId, req.userId!))
+            .orderBy(desc(projects.createdAt))
+        console.log(`[dashboard] /projects user=${req.userId} rows=${rows.length}`)
+        res.json({ projects: rows })
+    } catch (err: any) {
+        console.error(`[dashboard] /projects error:`, err.message, "| cause:", err.cause?.message ?? err.cause ?? "(none)")
+        res.status(500).json({ error: "Failed to fetch projects" })
+    }
+})
+
+router.get("/active", authenticate, async (req, res) => {
+    try {
+        const userId = req.userId!
+        const ids = await redis.smembers(`user:${userId}:active`)
+        const jobs = await Promise.all(
+            ids.map(async (id) => {
+                const data = await redis.hgetall(`job:${id}`)
+                return Object.keys(data).length ? { jobId: id, ...data } : null
+            }),
+        )
+        const active = jobs.filter(Boolean)
+        console.log(`[dashboard] /active user=${userId} active=${active.length}`)
+        res.json({ active })
+    } catch (err: any) {
+        console.error(`[dashboard] /active error:`, err.message)
+        res.status(500).json({ error: "Failed to fetch active jobs" })
     }
 })
 

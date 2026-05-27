@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router";
+import { toast } from "react-toastify";
 import { useUser } from "./hooks/useUser.tsx";
 import Navbar from "./components/Navbar";
 import Logo from "./components/Logo";
@@ -86,10 +88,51 @@ function timeAgo(dateStr: string): string {
 
 const ListRepos = () => {
     const { data: user } = useUser();
+    const navigate = useNavigate();
     const [searchTerm, setSearchTerm] = useState("");
     const [repos, setRepos] = useState<Repo[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [importingId, setImportingId] = useState<number | null>(null);
+
+    const handleImport = async (repo: Repo) => {
+        if (importingId !== null) return;
+        const [owner, name] = repo.full_name.split("/");
+        setImportingId(repo.id);
+        try {
+            const res = await fetch("http://localhost:3000/api/generate", {
+                method: "POST",
+                credentials: "include",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ repoOwner: owner, repoName: name }),
+            });
+            if (!res.ok) {
+                const data = await res.json().catch(() => ({}));
+                throw new Error(data?.error ?? "Failed to queue job");
+            }
+            toast(
+                <div className="flex items-start gap-3">
+                    <span className="material-symbols-outlined text-[#aec6ff] text-[20px] mt-0.5">cloud_queue</span>
+                    <div className="flex flex-col">
+                        <span className="font-bold text-white text-sm tracking-wide">Queued</span>
+                        <span className="text-white/50 text-xs mt-1">{repo.name} is in the generation queue.</span>
+                    </div>
+                </div>
+            );
+            navigate("/dashboard");
+        } catch (err: any) {
+            toast(
+                <div className="flex items-start gap-3">
+                    <span className="material-symbols-outlined text-[#ffb4ab] text-[20px] mt-0.5">error</span>
+                    <div className="flex flex-col">
+                        <span className="font-bold text-white text-sm tracking-wide">Couldn't queue</span>
+                        <span className="text-white/50 text-xs mt-1">{err.message}</span>
+                    </div>
+                </div>
+            );
+            setImportingId(null);
+        }
+    };
 
     useEffect(() => {
         const fetchRepos = async () => {
@@ -225,8 +268,12 @@ const ListRepos = () => {
                                                         </p>
                                                     </div>
                                                 </div>
-                                                <button className="px-3 sm:px-4 py-1.5 text-xs sm:text-sm font-medium bg-white text-black rounded-lg hover:bg-neutral-200 transition-all active:scale-95 shadow-sm shrink-0">
-                                                    Import
+                                                <button
+                                                    onClick={() => handleImport(repo)}
+                                                    disabled={importingId === repo.id}
+                                                    className="px-3 sm:px-4 py-1.5 text-xs sm:text-sm font-medium bg-white text-black rounded-lg hover:bg-neutral-200 transition-all active:scale-95 shadow-sm shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                >
+                                                    {importingId === repo.id ? "Queueing…" : "Import"}
                                                 </button>
                                             </div>
                                         );
@@ -244,7 +291,7 @@ const ListRepos = () => {
                         </div>
 
                         <div className="mt-6 text-center">
-                            <p className="text-xs text-white/40">Don't see your repository? <a href="#" className="text-white hover:underline">Adjust GitHub App permissions</a></p>
+                            <p className="text-xs text-white/40">Don't see your repository? <span className="text-white hover:underline">Try Searching it in search bar above.</span></p>
                         </div>
 
                     </div>

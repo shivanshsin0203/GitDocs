@@ -3,6 +3,7 @@ import express from "express";
 import cors from "cors";
 import apiRouter from "./api/server";
 import cookieParser from "cookie-parser";
+import "./worker";  // boots the BullMQ worker in the same Node process
 
 const app = express();
 const PORT = process.env.PORT || 3000;
