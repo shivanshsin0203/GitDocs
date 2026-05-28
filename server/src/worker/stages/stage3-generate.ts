@@ -119,6 +119,7 @@ export async function generateReadme(
 ): Promise<string> {
   console.log(`[stage2b] sending files to DeepSeek for README generation for ${owner}/${repo}`)
   const cloneUrl = `https://github.com/${owner}/${repo}.git`
+  console.log(`[deepseek] -> CALL  stage=2 repo=${owner}/${repo}`)
   const response = await client.chat.completions.create({
     model: 'deepseek-chat',
     temperature: 0.3,
@@ -131,6 +132,7 @@ export async function generateReadme(
     ],
   })
   const usage = response.usage
+  console.log(`[deepseek] <- DONE  stage=2 repo=${owner}/${repo}`)
   console.log(`[stage2b] DeepSeek tokens in=${usage?.prompt_tokens} out=${usage?.completion_tokens}`)
   const readme = response.choices[0].message.content ?? ''
   console.log(`[stage2b] README generated (${readme.length} chars)`)

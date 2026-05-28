@@ -86,6 +86,7 @@ export async function analyzeWithDeepSeek(
   paths: string[],
 ): Promise<Stage1Result> {
   console.log(`[stage1] sending ${paths.length} paths to DeepSeek for ${owner}/${repo}`)
+  console.log(`[deepseek] -> CALL  stage=1 repo=${owner}/${repo}`)
   const response = await client.chat.completions.create({
     model: 'deepseek-chat',
     temperature: 0.3,
@@ -99,6 +100,7 @@ export async function analyzeWithDeepSeek(
     response_format: { type: 'json_object' },
   })
   const usage = response.usage
+  console.log(`[deepseek] <- DONE  stage=1 repo=${owner}/${repo}`)
   console.log(`[stage1] DeepSeek tokens in=${usage?.prompt_tokens} out=${usage?.completion_tokens}`)
   const raw = response.choices[0].message.content ?? '{}'
   const result = JSON.parse(raw) as Stage1Result
