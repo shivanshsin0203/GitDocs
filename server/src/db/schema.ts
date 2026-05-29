@@ -1,4 +1,4 @@
-import { pgTable, text, boolean, timestamp } from 'drizzle-orm/pg-core'
+import { pgTable, text, boolean, integer, timestamp } from 'drizzle-orm/pg-core'
 
 export const users = pgTable('users', {
   id:            text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
@@ -24,6 +24,10 @@ export const projects = pgTable('projects', {
   readmeMarkdown: text('readme_markdown'),
   status:         text('status').notNull(),
   errorMessage:   text('error_message'),
+  prUrl:          text('pr_url'),
+  prNumber:       integer('pr_number'),
+  prStatus:       text('pr_status'),
+  prCheckedAt:    timestamp('pr_checked_at'),
   createdAt:      timestamp('created_at').defaultNow(),
   updatedAt:      timestamp('updated_at').defaultNow(),
 })

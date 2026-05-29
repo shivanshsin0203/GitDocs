@@ -4,6 +4,9 @@ import { db } from "../../db";
 import { users, projects } from "../../db/schema";
 import { eq, desc } from "drizzle-orm";
 import { redis } from "../../lib/redis";
+import { getPRStatus } from "../../lib/github-pr";
+
+const PR_STATUS_TTL_MS = 60 * 1000;
 
 const router = Router();
 
@@ -61,6 +64,62 @@ router.get("/projects", authenticate, async (req, res) => {
             .where(eq(projects.userId, req.userId!))
             .orderBy(desc(projects.createdAt))
         console.log(`[dashboard] /projects user=${req.userId} rows=${rows.length}`)
+
+        // Enrich open PRs whose status is stale (best-effort, never fails the dashboard)
+        const now = Date.now()
+        const openCount = rows.filter((r) => r.prStatus === "open").length
+        const stale = rows.filter((r) =>
+            r.prStatus === "open" &&
+            r.prNumber !== null &&
+            (!r.prCheckedAt || now - new Date(r.prCheckedAt as Date).getTime() > PR_STATUS_TTL_MS)
+        )
+        console.log(`[dashboard] open PRs: ${openCount}, stale (needs poll): ${stale.length}`)
+
+        if (stale.length > 0) {
+            const userRows = await db
+                .select({ githubToken: users.githubToken })
+                .from(users)
+                .where(eq(users.id, req.userId!))
+                .limit(1)
+            const token = userRows[0]?.githubToken
+
+            if (!token) {
+                console.warn(`[dashboard] no github token for user=${req.userId}, skipping PR status enrichment`)
+            } else {
+                const results = await Promise.allSettled(
+                    stale.map((r) => getPRStatus(token, r.repoOwner, r.repoName, r.prNumber!))
+                )
+                const checkedAt = new Date()
+                const updates: Promise<unknown>[] = []
+                for (let i = 0; i < stale.length; i++) {
+                    const r = stale[i]
+                    const result = results[i]
+                    if (result.status === "fulfilled") {
+                        const newStatus = result.value.status
+                        console.log(
+                            `[dashboard] poll project=${r.id} repo=${r.repoOwner}/${r.repoName} pr#${r.prNumber}: ${r.prStatus} → ${newStatus}`
+                        )
+                        r.prStatus = newStatus
+                        r.prCheckedAt = checkedAt
+                        updates.push(
+                            db.update(projects)
+                                .set({ prStatus: newStatus, prCheckedAt: checkedAt })
+                                .where(eq(projects.id, r.id))
+                                .then(
+                                    () => console.log(`[dashboard] persisted pr status for ${r.id}`),
+                                    (e) => console.error(`[dashboard] pr-status update failed for ${r.id}:`, e?.message ?? e)
+                                )
+                        )
+                    } else {
+                        console.warn(`[dashboard] pr-status check failed for ${r.id}:`, (result.reason as Error)?.message)
+                    }
+                }
+                // Block the response until persistence completes so the next poll
+                // doesn't re-fetch the same status from GitHub.
+                if (updates.length) await Promise.allSettled(updates)
+            }
+        }
+
         res.json({ projects: rows })
     } catch (err: any) {
         console.error(`[dashboard] /projects error:`, err.message, "| cause:", err.cause?.message ?? err.cause ?? "(none)")

@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "react-toastify";
 import type { IconType } from "react-icons";
+import ConfirmDialog from "./components/ConfirmDialog";
 import {
   SiTypescript, SiJavascript, SiPython, SiGo, SiRust, SiOpenjdk, SiKotlin, SiSwift,
   SiC, SiCplusplus, SiSharp, SiPhp, SiRuby, SiDart, SiScala, SiElixir, SiHaskell,
@@ -24,8 +26,29 @@ interface Project {
   readmeMarkdown: string | null;
   status: "completed" | "failed";
   errorMessage: string | null;
+  prUrl: string | null;
+  prNumber: number | null;
+  prStatus: "open" | "merged" | "closed" | null;
   createdAt: string;
   updatedAt: string;
+}
+
+function PrBadge({ prStatus }: { prStatus: "open" | "merged" | "closed" }) {
+  const config: Record<string, { color: string; label: string; icon: string }> = {
+    open:   { color: "#aec6ff", label: "PR open",   icon: "fork_right" },
+    merged: { color: "#27c93f", label: "Merged",    icon: "check_circle" },
+    closed: { color: "#a1a1a1", label: "Closed",    icon: "cancel" },
+  };
+  const c = config[prStatus];
+  return (
+    <span
+      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono font-medium border whitespace-nowrap"
+      style={{ color: c.color, borderColor: `${c.color}40`, backgroundColor: `${c.color}10` }}
+    >
+      <span className="material-symbols-outlined text-[11px]">{c.icon}</span>
+      {c.label}
+    </span>
+  );
 }
 
 const LANGUAGE_ICON: Record<string, { Icon: IconType; color: string }> = {
@@ -155,12 +178,44 @@ interface CardProps {
   stage: Stage;
   createdAt?: string | null;
   errorMessage?: string | null;
+  prStatus?: "open" | "merged" | "closed" | null;
+  onClick?: () => void;
+  onDelete?: () => void;
+  onRetry?: () => void;
 }
 
-function ProjectCard({ title, subtitle, description, language, stage, createdAt, errorMessage }: CardProps) {
+function ProjectCard({ title, subtitle, description, language, stage, createdAt, errorMessage, prStatus, onClick, onDelete, onRetry }: CardProps) {
   const borderHover = stage === "failed" ? "hover:border-[#ffb4ab]/30" : "hover:border-white/25";
+  const clickable = !!onClick;
   return (
-    <div className={`group bg-[#0d1117] rounded-xl border border-white/10 ${borderHover} transition-all duration-300 flex flex-col min-h-44 sm:h-48 cursor-pointer relative overflow-hidden`}>
+    <div
+      onClick={onClick}
+      className={`group bg-[#0d1117] rounded-xl border border-white/10 ${borderHover} transition-all duration-300 flex flex-col min-h-44 sm:h-48 relative overflow-hidden ${clickable ? "cursor-pointer" : "cursor-default"}`}
+    >
+      {(onDelete || onRetry) && (
+        <div className="absolute top-2 right-2 z-10 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          {onRetry && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onRetry(); }}
+              className="w-7 h-7 rounded-md flex items-center justify-center bg-[#0d1117]/80 border border-white/10 text-white/60 hover:text-[#aec6ff] hover:border-[#aec6ff]/40 transition-colors backdrop-blur-sm"
+              title="Retry"
+              aria-label="Retry"
+            >
+              <span className="material-symbols-outlined text-[15px]">refresh</span>
+            </button>
+          )}
+          {onDelete && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onDelete(); }}
+              className="w-7 h-7 rounded-md flex items-center justify-center bg-[#0d1117]/80 border border-white/10 text-white/60 hover:text-[#ffb4ab] hover:border-[#ffb4ab]/40 transition-colors backdrop-blur-sm"
+              title="Delete"
+              aria-label="Delete"
+            >
+              <span className="material-symbols-outlined text-[15px]">delete</span>
+            </button>
+          )}
+        </div>
+      )}
       <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-gradient-to-br from-white/[0.04] to-transparent pointer-events-none"></div>
       <div className="p-5 sm:p-6 flex-grow flex flex-col">
         <div className="flex justify-between items-start mb-3">
@@ -178,9 +233,10 @@ function ProjectCard({ title, subtitle, description, language, stage, createdAt,
           {description}
         </p>
       </div>
-      <div className="px-5 sm:px-6 py-3 sm:py-4 border-t border-white/5 bg-white/[0.02] flex items-center justify-between gap-2 text-[11px] sm:text-xs text-white/50 min-w-0">
-        <div className="min-w-0 truncate">
+      <div className="px-5 sm:px-6 py-3 sm:py-4 border-t border-white/5 bg-white/[0.02] flex flex-wrap items-center justify-between gap-x-3 gap-y-2 text-[11px] sm:text-xs text-white/50">
+        <div className="flex items-center gap-2 flex-wrap min-w-0">
           <StagePill stage={stage} error={errorMessage} />
+          {prStatus && <PrBadge prStatus={prStatus} />}
         </div>
         {createdAt && (
           <div className="flex items-center gap-1 font-mono text-white/40 shrink-0 whitespace-nowrap">
@@ -197,6 +253,7 @@ function ProjectCard({ title, subtitle, description, language, stage, createdAt,
 const Dashboard = () => {
   const { data: user, isLoading } = useUser();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { active } = useJobStream();
 
   const projectsQuery = useQuery<Project[]>({
@@ -206,6 +263,86 @@ const Dashboard = () => {
   });
 
   const [searchTerm, setSearchTerm] = useState("");
+  const [confirm, setConfirm] = useState<{
+    kind: "delete" | "retry";
+    project: Project;
+  } | null>(null);
+  const [confirmBusy, setConfirmBusy] = useState(false);
+
+  const runDelete = async (project: Project) => {
+    setConfirmBusy(true);
+    try {
+      const res = await fetch(`${API}/api/projects/${project.id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      if (!res.ok && res.status !== 204) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data?.error ?? "Delete failed");
+      }
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
+      toast(
+        <div className="flex items-start gap-3">
+          <span className="material-symbols-outlined text-[#27c93f] text-[20px] mt-0.5">check_circle</span>
+          <div className="flex flex-col">
+            <span className="font-bold text-white text-sm tracking-wide">Deleted</span>
+            <span className="text-white/50 text-xs mt-1">{project.displayName ?? project.repoName} removed.</span>
+          </div>
+        </div>
+      );
+      setConfirm(null);
+    } catch (err: any) {
+      toast(
+        <div className="flex items-start gap-3">
+          <span className="material-symbols-outlined text-[#ffb4ab] text-[20px] mt-0.5">error</span>
+          <div className="flex flex-col">
+            <span className="font-bold text-white text-sm tracking-wide">Couldn't delete</span>
+            <span className="text-white/50 text-xs mt-1">{err.message}</span>
+          </div>
+        </div>
+      );
+    } finally {
+      setConfirmBusy(false);
+    }
+  };
+
+  const runRetry = async (project: Project) => {
+    setConfirmBusy(true);
+    try {
+      const res = await fetch(`${API}/api/projects/${project.id}/retry`, {
+        method: "POST",
+        credentials: "include",
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data?.error ?? "Retry failed");
+      }
+      // The failed row is gone; an active job appears via SSE.
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
+      toast(
+        <div className="flex items-start gap-3">
+          <span className="material-symbols-outlined text-[#aec6ff] text-[20px] mt-0.5">cloud_queue</span>
+          <div className="flex flex-col">
+            <span className="font-bold text-white text-sm tracking-wide">Re-queued</span>
+            <span className="text-white/50 text-xs mt-1">{project.displayName ?? project.repoName} is back in the queue.</span>
+          </div>
+        </div>
+      );
+      setConfirm(null);
+    } catch (err: any) {
+      toast(
+        <div className="flex items-start gap-3">
+          <span className="material-symbols-outlined text-[#ffb4ab] text-[20px] mt-0.5">error</span>
+          <div className="flex flex-col">
+            <span className="font-bold text-white text-sm tracking-wide">Couldn't retry</span>
+            <span className="text-white/50 text-xs mt-1">{err.message}</span>
+          </div>
+        </div>
+      );
+    } finally {
+      setConfirmBusy(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -334,23 +471,56 @@ const Dashboard = () => {
                   </div>
                 )}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-                  {filteredProjects.map((p) => (
-                    <ProjectCard
-                      key={p.id}
-                      title={p.displayName || p.repoName}
-                      subtitle={`${p.repoOwner}/${p.repoName}`}
-                      description={p.description || p.errorMessage || "—"}
-                      language={p.language}
-                      stage={p.status}
-                      createdAt={p.createdAt}
-                      errorMessage={p.errorMessage}
-                    />
-                  ))}
+                  {filteredProjects.map((p) => {
+                    let onCardClick: (() => void) | undefined;
+                    if (p.status === "completed") {
+                      onCardClick = p.prUrl
+                        ? () => window.open(p.prUrl!, "_blank", "noreferrer")
+                        : () => navigate(`/project/${p.id}`);
+                    }
+                    return (
+                      <ProjectCard
+                        key={p.id}
+                        title={p.displayName || p.repoName}
+                        subtitle={`${p.repoOwner}/${p.repoName}`}
+                        description={p.description || p.errorMessage || "—"}
+                        language={p.language}
+                        stage={p.status}
+                        createdAt={p.createdAt}
+                        errorMessage={p.errorMessage}
+                        prStatus={p.prStatus}
+                        onClick={onCardClick}
+                        onDelete={() => setConfirm({ kind: "delete", project: p })}
+                        onRetry={p.status === "failed" ? () => setConfirm({ kind: "retry", project: p }) : undefined}
+                      />
+                    );
+                  })}
                 </div>
               </section>
             )}
           </div>
         </main>
+
+        <ConfirmDialog
+          open={!!confirm}
+          busy={confirmBusy}
+          destructive={confirm?.kind === "delete"}
+          title={confirm?.kind === "delete" ? "Delete project?" : "Retry generation?"}
+          message={
+            confirm?.kind === "delete"
+              ? `${confirm.project.displayName ?? confirm.project.repoName} will be removed from your dashboard. Any PR you created on GitHub remains untouched.`
+              : confirm?.kind === "retry"
+              ? `${confirm.project.displayName ?? confirm.project.repoName} will be re-queued for analysis and README generation.`
+              : ""
+          }
+          confirmLabel={confirm?.kind === "delete" ? "Delete" : "Retry"}
+          onCancel={() => !confirmBusy && setConfirm(null)}
+          onConfirm={() => {
+            if (!confirm) return;
+            if (confirm.kind === "delete") runDelete(confirm.project);
+            else runRetry(confirm.project);
+          }}
+        />
 
         <footer className="w-full border-t border-white/5 bg-black mt-auto">
           <div className="flex justify-between items-center px-4 sm:px-6 lg:px-8 py-6 sm:py-8 max-w-7xl mx-auto">
