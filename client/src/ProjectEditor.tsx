@@ -651,6 +651,7 @@ const ProjectEditor = () => {
                     visibleDragbar={false}
                     height={paneHeight}
                     className="gh-editor"
+                    extraCommands={[]}
                   />
                 </div>
               )}
