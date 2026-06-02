@@ -2,11 +2,11 @@ import { Router } from "express";
 import { authenticate } from "../middleware/auth";
 import { db } from "../../db";
 import { users, projects } from "../../db/schema";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and, inArray } from "drizzle-orm";
 import { redis } from "../../lib/redis";
 import { getPRStatus } from "../../lib/github-pr";
 
-const PR_STATUS_TTL_MS = 60 * 1000;
+const PR_STATUS_TTL_MS = 120 * 1000;
 
 const router = Router();
 
@@ -64,7 +64,6 @@ router.get("/projects", authenticate, async (req, res) => {
             .where(eq(projects.userId, req.userId!))
             .orderBy(desc(projects.createdAt))
         console.log(`[dashboard] /projects user=${req.userId} rows=${rows.length}`)
-
         // Enrich open PRs whose status is stale (best-effort, never fails the dashboard)
         const now = Date.now()
         const openCount = rows.filter((r) => r.prStatus === "open").length
@@ -74,7 +73,8 @@ router.get("/projects", authenticate, async (req, res) => {
             (!r.prCheckedAt || now - new Date(r.prCheckedAt as Date).getTime() > PR_STATUS_TTL_MS)
         )
         console.log(`[dashboard] open PRs: ${openCount}, stale (needs poll): ${stale.length}`)
-
+        console.log(stale)
+        console.log(stale.length>0)
         if (stale.length > 0) {
             const userRows = await db
                 .select({ githubToken: users.githubToken })
@@ -90,7 +90,9 @@ router.get("/projects", authenticate, async (req, res) => {
                     stale.map((r) => getPRStatus(token, r.repoOwner, r.repoName, r.prNumber!))
                 )
                 const checkedAt = new Date()
-                const updates: Promise<unknown>[] = []
+                const buckets: Record<"open" | "merged" | "closed", string[]> = {
+                    open: [], merged: [], closed: [],
+                }
                 for (let i = 0; i < stale.length; i++) {
                     const r = stale[i]
                     const result = results[i]
@@ -101,18 +103,24 @@ router.get("/projects", authenticate, async (req, res) => {
                         )
                         r.prStatus = newStatus
                         r.prCheckedAt = checkedAt
-                        updates.push(
-                            db.update(projects)
-                                .set({ prStatus: newStatus, prCheckedAt: checkedAt })
-                                .where(eq(projects.id, r.id))
-                                .then(
-                                    () => console.log(`[dashboard] persisted pr status for ${r.id}`),
-                                    (e) => console.error(`[dashboard] pr-status update failed for ${r.id}:`, e?.message ?? e)
-                                )
-                        )
+                        buckets[newStatus].push(r.id)
                     } else {
                         console.warn(`[dashboard] pr-status check failed for ${r.id}:`, (result.reason as Error)?.message)
                     }
+                }
+                const updates: Promise<unknown>[] = []
+                for (const status of ["open", "merged", "closed"] as const) {
+                    const ids = buckets[status]
+                    if (ids.length === 0) continue
+                    updates.push(
+                        db.update(projects)
+                            .set({ prStatus: status, prCheckedAt: checkedAt })
+                            .where(and(eq(projects.userId, req.userId!), inArray(projects.id, ids)))
+                            .then(
+                                () => console.log(`[dashboard] persisted ${ids.length} row(s) as ${status}`),
+                                (e) => console.error(`[dashboard] bulk pr-status update failed for ${status}:`, e?.message ?? e)
+                            )
+                    )
                 }
                 // Block the response until persistence completes so the next poll
                 // doesn't re-fetch the same status from GitHub.

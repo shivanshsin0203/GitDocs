@@ -1,9 +1,9 @@
-import { useEffect } from "react";
+import { useEffect, type ReactNode } from "react";
 
 interface ConfirmDialogProps {
   open: boolean;
   title: string;
-  message: string;
+  message: ReactNode;
   confirmLabel?: string;
   cancelLabel?: string;
   destructive?: boolean;
@@ -63,7 +63,7 @@ function ConfirmDialog({
         </div>
 
         <div className="px-5 sm:px-6 py-5">
-          <p className="text-sm text-white/60 leading-relaxed">{message}</p>
+          <div className="text-sm text-white/60 leading-relaxed space-y-3">{message}</div>
         </div>
 
         <div className="flex items-center justify-end gap-3 px-5 sm:px-6 py-4 border-t border-white/5 bg-white/[0.02]">

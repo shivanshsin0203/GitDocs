@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-toastify";
@@ -12,6 +12,7 @@ import {
 import { FaCode, FaCss3Alt } from "react-icons/fa";
 import { useUser } from "./hooks/useUser.tsx";
 import { useJobStream, type Stage } from "./hooks/useJobStream.tsx";
+import { clearDraft, sweepDrafts } from "./lib/draft";
 import Navbar from "./components/Navbar";
 import Logo from "./components/Logo";
 
@@ -115,6 +116,101 @@ function timeAgo(dateStr: string): string {
   if (week < 5)  return `${week} week${week > 1 ? "s" : ""} ago`;
   if (month < 12) return `${month} month${month > 1 ? "s" : ""} ago`;
   return `${year} year${year > 1 ? "s" : ""} ago`;
+}
+
+function regenerateTitle(p: Project): string {
+  return p.status === "failed" ? "Retry generation?" : "Regenerate README?";
+}
+
+function regenerateConfirmLabel(p: Project): string {
+  return p.status === "failed" ? "Retry" : "Regenerate";
+}
+
+function ProjectPill({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="font-semibold text-white">{children}</span>
+  );
+}
+
+function PrPill({ number }: { number: number | null }) {
+  return (
+    <span className="font-mono text-[#aec6ff] bg-[#aec6ff]/10 border border-[#aec6ff]/20 px-1.5 py-0.5 rounded text-[11px] align-baseline">
+      #{number}
+    </span>
+  );
+}
+
+function Warn({ tone = "amber", children }: { tone?: "amber" | "red"; children: React.ReactNode }) {
+  const color = tone === "red" ? "#ffb4ab" : "#ffbd2e";
+  return (
+    <div
+      className="flex items-start gap-2.5 rounded-lg border px-3 py-2.5"
+      style={{
+        color: `${color}E6`,
+        borderColor: `${color}40`,
+        backgroundColor: `${color}0D`,
+      }}
+    >
+      <span className="material-symbols-outlined text-[16px] shrink-0 mt-0.5" style={{ color }}>
+        warning
+      </span>
+      <div className="text-[12.5px] leading-relaxed text-white/75">{children}</div>
+    </div>
+  );
+}
+
+function regenerateMessage(p: Project): React.ReactNode {
+  const name = p.displayName ?? p.repoName;
+
+  if (p.status === "failed") {
+    return (
+      <p>
+        <ProjectPill>{name}</ProjectPill> will be re-queued for analysis. The failed entry is replaced
+        with a fresh attempt — nothing on GitHub is affected.
+      </p>
+    );
+  }
+
+  if (!p.prUrl) {
+    return (
+      <p>
+        <ProjectPill>{name}</ProjectPill> will be re-analyzed from scratch and a new README will
+        replace the current one in this dashboard. Nothing on GitHub is touched.
+      </p>
+    );
+  }
+
+  if (p.prStatus === "merged") {
+    return (
+      <>
+        <p>
+          <ProjectPill>{name}</ProjectPill> will be re-analyzed and a fresh README generated in this
+          dashboard.
+        </p>
+        <Warn tone="red">
+          Pull request <PrPill number={p.prNumber} /> is already <span className="font-semibold text-[#27c93f]">merged</span> on
+          GitHub's default branch — regenerating here does <span className="font-semibold">not</span> undo
+          that. The committed README on <span className="font-mono text-white/90">main</span> stays as-is.
+          To actually replace what's on the default branch, you'd need to submit and merge a new PR.
+        </Warn>
+      </>
+    );
+  }
+
+  return (
+    <>
+      <p>
+        <ProjectPill>{name}</ProjectPill> will be re-analyzed and a fresh README generated in this
+        dashboard.
+      </p>
+      <Warn>
+        Pull request <PrPill number={p.prNumber} /> stays on GitHub (currently{" "}
+        <span className="font-semibold text-white/90">{p.prStatus ?? "open"}</span>) but this
+        dashboard entry will stop linking to it — you'll get a new project to review and, if you
+        want, submit a fresh PR.
+      </Warn>
+    </>
+  );
 }
 
 const API = "http://localhost:3000";
@@ -269,6 +365,13 @@ const Dashboard = () => {
   } | null>(null);
   const [confirmBusy, setConfirmBusy] = useState(false);
 
+  // Sweep stale localStorage drafts: orphans (project gone), locked (prUrl set),
+  // and expired (>5 days). Runs whenever the projects list refetches — cheap + idempotent.
+  useEffect(() => {
+    if (!projectsQuery.data) return;
+    sweepDrafts(projectsQuery.data);
+  }, [projectsQuery.data]);
+
   const runDelete = async (project: Project) => {
     setConfirmBusy(true);
     try {
@@ -280,6 +383,7 @@ const Dashboard = () => {
         const data = await res.json().catch(() => ({}));
         throw new Error(data?.error ?? "Delete failed");
       }
+      clearDraft(project.id);
       queryClient.invalidateQueries({ queryKey: ["projects"] });
       toast(
         <div className="flex items-start gap-3">
@@ -317,14 +421,20 @@ const Dashboard = () => {
         const data = await res.json().catch(() => ({}));
         throw new Error(data?.error ?? "Retry failed");
       }
+      // Retry mints a new project ID (see architecture §4.16) — the old draft is orphaned.
+      clearDraft(project.id);
       // The failed row is gone; an active job appears via SSE.
       queryClient.invalidateQueries({ queryKey: ["projects"] });
+      const toastTitle = project.status === "failed" ? "Re-queued" : "Regenerating";
+      const toastBody  = project.status === "failed"
+        ? `${project.displayName ?? project.repoName} is back in the queue.`
+        : `${project.displayName ?? project.repoName} will be re-analyzed.`;
       toast(
         <div className="flex items-start gap-3">
           <span className="material-symbols-outlined text-[#aec6ff] text-[20px] mt-0.5">cloud_queue</span>
           <div className="flex flex-col">
-            <span className="font-bold text-white text-sm tracking-wide">Re-queued</span>
-            <span className="text-white/50 text-xs mt-1">{project.displayName ?? project.repoName} is back in the queue.</span>
+            <span className="font-bold text-white text-sm tracking-wide">{toastTitle}</span>
+            <span className="text-white/50 text-xs mt-1">{toastBody}</span>
           </div>
         </div>
       );
@@ -491,7 +601,7 @@ const Dashboard = () => {
                         prStatus={p.prStatus}
                         onClick={onCardClick}
                         onDelete={() => setConfirm({ kind: "delete", project: p })}
-                        onRetry={p.status === "failed" ? () => setConfirm({ kind: "retry", project: p }) : undefined}
+                        onRetry={() => setConfirm({ kind: "retry", project: p })}
                       />
                     );
                   })}
@@ -505,15 +615,32 @@ const Dashboard = () => {
           open={!!confirm}
           busy={confirmBusy}
           destructive={confirm?.kind === "delete"}
-          title={confirm?.kind === "delete" ? "Delete project?" : "Retry generation?"}
-          message={
+          title={
             confirm?.kind === "delete"
-              ? `${confirm.project.displayName ?? confirm.project.repoName} will be removed from your dashboard. Any PR you created on GitHub remains untouched.`
+              ? "Delete project?"
               : confirm?.kind === "retry"
-              ? `${confirm.project.displayName ?? confirm.project.repoName} will be re-queued for analysis and README generation.`
+              ? regenerateTitle(confirm.project)
               : ""
           }
-          confirmLabel={confirm?.kind === "delete" ? "Delete" : "Retry"}
+          message={
+            confirm?.kind === "delete" ? (
+              <p>
+                <ProjectPill>{confirm.project.displayName ?? confirm.project.repoName}</ProjectPill>{" "}
+                will be removed from your dashboard. Any PR you created on GitHub remains untouched.
+              </p>
+            ) : confirm?.kind === "retry" ? (
+              regenerateMessage(confirm.project)
+            ) : (
+              ""
+            )
+          }
+          confirmLabel={
+            confirm?.kind === "delete"
+              ? "Delete"
+              : confirm?.kind === "retry"
+              ? regenerateConfirmLabel(confirm.project)
+              : "Confirm"
+          }
           onCancel={() => !confirmBusy && setConfirm(null)}
           onConfirm={() => {
             if (!confirm) return;

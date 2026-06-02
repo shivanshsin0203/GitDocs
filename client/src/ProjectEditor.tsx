@@ -16,6 +16,7 @@ import {
   formatBytes,
   MAX_IMAGE_BYTES,
 } from "./lib/attach";
+import { clearDraft, loadDraft, saveDraft } from "./lib/draft";
 
 interface Project {
   id: string;
@@ -37,7 +38,6 @@ interface Project {
 }
 
 const API = "http://localhost:3000";
-const DRAFT_PREFIX = "gitdocs:draft:";
 const DRAFT_DEBOUNCE_MS = 500;
 
 async function fetchProject(id: string): Promise<Project> {
@@ -132,6 +132,18 @@ function toastSuccess(title: string, body: React.ReactNode) {
   );
 }
 
+function formatDraftAge(ts: number): string {
+  const diff = Math.max(0, Date.now() - ts);
+  const sec = Math.floor(diff / 1000);
+  const min = Math.floor(sec / 60);
+  const hr  = Math.floor(min / 60);
+  const day = Math.floor(hr / 24);
+  if (sec < 60) return "just now";
+  if (min < 60) return `${min} minute${min > 1 ? "s" : ""} ago`;
+  if (hr < 24)  return `${hr} hour${hr > 1 ? "s" : ""} ago`;
+  return `${day} day${day > 1 ? "s" : ""} ago`;
+}
+
 async function blobToBase64(blob: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -164,6 +176,7 @@ const ProjectEditor = () => {
   const [hydrated, setHydrated] = useState(false);
   const [dirty, setDirty] = useState(false);
   const [draftRestored, setDraftRestored] = useState(false);
+  const [draftSavedAt, setDraftSavedAt] = useState<number | null>(null);
   const [paneMode, setPaneMode] = useState<"edit" | "preview" | "split">("split");
   const [modalOpen, setModalOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -192,11 +205,22 @@ const ProjectEditor = () => {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const editorBodyRef = useRef<HTMLDivElement | null>(null);
 
+  // Only images whose path is actually referenced in the current markdown.
+  // The full `images` Map is kept so deleting + re-typing a ref still resolves;
+  // but counts, totals, and the PR payload all come from this filtered view.
+  const referencedImages = useMemo(() => {
+    const out: Array<[string, File]> = [];
+    for (const entry of images) {
+      if (markdown.includes(entry[0])) out.push(entry);
+    }
+    return out;
+  }, [images, markdown]);
+
   const totalImageBytes = useMemo(() => {
     let total = 0;
-    for (const f of images.values()) total += f.size;
+    for (const [, f] of referencedImages) total += f.size;
     return total;
-  }, [images]);
+  }, [referencedImages]);
 
   // Sync objectUrls with images: create new URLs, revoke removed ones
   useEffect(() => {
@@ -223,16 +247,17 @@ const ProjectEditor = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Hydrate from project + localStorage draft (draft wins if present)
+  // Hydrate from project + localStorage draft (draft wins if present).
+  // Expired drafts (>5 days) come back as null — falls through to server copy.
   useEffect(() => {
     if (!projectQuery.data || hydrated) return;
     const original = projectQuery.data.readmeMarkdown ?? "";
-    const draftKey = DRAFT_PREFIX + projectQuery.data.id;
-    const draft = localStorage.getItem(draftKey);
-    if (draft !== null && draft !== original) {
-      setMarkdown(draft);
+    const draft = loadDraft(projectQuery.data.id);
+    if (draft !== null && draft.md !== original) {
+      setMarkdown(draft.md);
       setDirty(true);
       setDraftRestored(true);
+      setDraftSavedAt(draft.updatedAt);
     } else {
       setMarkdown(original);
     }
@@ -245,12 +270,7 @@ const ProjectEditor = () => {
     if (!hydrated || !projectQuery.data) return;
     if (saveTimer.current) window.clearTimeout(saveTimer.current);
     saveTimer.current = window.setTimeout(() => {
-      const key = DRAFT_PREFIX + projectQuery.data!.id;
-      try {
-        localStorage.setItem(key, markdown);
-      } catch {
-        // localStorage full or denied — silent fail; submit still works
-      }
+      saveDraft(projectQuery.data!.id, markdown);
     }, DRAFT_DEBOUNCE_MS);
     return () => {
       if (saveTimer.current) window.clearTimeout(saveTimer.current);
@@ -424,7 +444,7 @@ const ProjectEditor = () => {
   const project = projectQuery.data!;
   const title = project.displayName || project.repoName;
   const repoPath = `${project.repoOwner}/${project.repoName}`;
-  const imageCount = images.size;
+  const imageCount = referencedImages.length;
   // Pane height fills the viewport exactly. Offset = navbar + header + attach strip
   // (+ optional draft banner, mobile warning, tablet/mobile toggle).
   const baseOffset = viewport === "mobile" ? 162 : 170;
@@ -449,7 +469,7 @@ const ProjectEditor = () => {
     setMarkdown(original);
     setDirty(false);
     setDraftRestored(false);
-    localStorage.removeItem(DRAFT_PREFIX + project.id);
+    clearDraft(project.id);
   };
 
   const handleOpenSubmit = () => {
@@ -466,7 +486,7 @@ const ProjectEditor = () => {
     setSubmitError(null);
     try {
       const serializedImages = await Promise.all(
-        Array.from(images.entries()).map(async ([path, file]) => ({
+        referencedImages.map(async ([path, file]) => ({
           path,
           contentBase64: await blobToBase64(file),
         })),
@@ -494,7 +514,7 @@ const ProjectEditor = () => {
       const data = await res.json();
 
       // Clear draft, mark clean, close modal
-      localStorage.removeItem(DRAFT_PREFIX + project.id);
+      clearDraft(project.id);
       setDirty(false);
       setModalOpen(false);
 
@@ -581,7 +601,10 @@ const ProjectEditor = () => {
               <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 flex items-center justify-between gap-3 text-[11px] font-mono">
                 <div className="flex items-center gap-2 text-[#ffbd2e]/90 min-w-0">
                   <span className="material-symbols-outlined text-[14px]">history</span>
-                  <span className="truncate">restored unsaved draft from your last session</span>
+                  <span className="truncate">
+                    restored unsaved draft
+                    {draftSavedAt !== null && ` from ${formatDraftAge(draftSavedAt)}`}
+                  </span>
                 </div>
                 <button
                   onClick={handleDiscardDraft}

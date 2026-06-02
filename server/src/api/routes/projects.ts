@@ -111,10 +111,10 @@ router.post("/:id/retry", authenticate, async (req, res) => {
     }
     const project = rows[0]
 
-    if (project.status !== "failed") {
-      return res.status(409).json({ error: "Only failed projects can be retried" })
-    }
-
+    // Regeneration is allowed for any project. The existing row (along with
+    // any prUrl metadata) is dropped — the worker INSERTs a fresh row when
+    // the new analysis completes. Any PR on GitHub remains independently;
+    // we just stop tracking it from this dashboard entry.
     const [user] = await db
       .select({ githubToken: users.githubToken })
       .from(users)
@@ -124,7 +124,9 @@ router.post("/:id/retry", authenticate, async (req, res) => {
       return res.status(401).json({ error: "GitHub token missing — please re-authenticate" })
     }
 
-    // Drop the failed row so the worker can INSERT fresh on success
+    // Drop the existing row so the worker can INSERT fresh on success.
+    // This also discards any prUrl / prStatus on this entry; the GitHub PR
+    // itself is not touched.
     await db.delete(projects).where(eq(projects.id, id))
 
     const jobId = randomUUID()
