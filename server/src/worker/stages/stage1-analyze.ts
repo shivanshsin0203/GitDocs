@@ -1,11 +1,9 @@
 import OpenAI from 'openai'
-
-if (!process.env.DEEPSEEK_API_KEY && !process.env.apiKey) {
-  console.warn('[stage1] WARNING: DEEPSEEK_API_KEY (or apiKey) not set in env')
-}
+import { z } from 'zod'
+import { env } from '../../lib/env'
 
 const client = new OpenAI({
-  apiKey:  process.env.DEEPSEEK_API_KEY ?? process.env.apiKey ?? '',
+  apiKey:  env.DEEPSEEK_API_KEY,
   baseURL: 'https://api.deepseek.com',
 })
 
@@ -48,14 +46,15 @@ VERY IMPORTANT NOTE:
 If the repository is large and there are more than 5 important files, you can include those paths in filesToRead array.
 Minimum 5 paths and maximum 10 to 18 paths depending upon repository size and complexity.`
 
-export type Stage1Result = {
-  message:          string
-  displayName:      string
-  shortDescription: string
-  language:         string
-  hasEnvExample:    boolean
-  filesToRead:      string[]
-}
+const Stage1ResultSchema = z.object({
+  message:          z.string().min(1),
+  displayName:      z.string().min(1),
+  shortDescription: z.string().min(1),
+  language:         z.string(),                     // may be "" per prompt
+  hasEnvExample:    z.boolean(),
+  filesToRead:      z.array(z.string().min(1)).min(1),
+})
+export type Stage1Result = z.infer<typeof Stage1ResultSchema>
 
 export async function getFileTree(
   owner: string,
@@ -102,8 +101,23 @@ export async function analyzeWithDeepSeek(
   const usage = response.usage
   console.log(`[deepseek] <- DONE  stage=1 repo=${owner}/${repo}`)
   console.log(`[stage1] DeepSeek tokens in=${usage?.prompt_tokens} out=${usage?.completion_tokens}`)
-  const raw = response.choices[0].message.content ?? '{}'
-  const result = JSON.parse(raw) as Stage1Result
+  const raw = response.choices[0]?.message?.content ?? '{}'
+
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(raw)
+  } catch (e: any) {
+    throw new Error(`Stage 1 returned invalid JSON: ${e.message}`)
+  }
+
+  const validation = Stage1ResultSchema.safeParse(parsed)
+  if (!validation.success) {
+    const issues = validation.error.issues
+      .map((i) => `${i.path.join('.') || '(root)'}: ${i.message}`)
+      .join('; ')
+    throw new Error(`Stage 1 returned unexpected shape: ${issues}`)
+  }
+  const result = validation.data
   console.log(`[stage1] displayName="${result.displayName}" language="${result.language ?? ''}" shortDescription="${result.shortDescription}" filesToRead=${result.filesToRead.length}`)
   return result
 }

@@ -1,6 +1,7 @@
 import jwt from 'jsonwebtoken'
+import { env } from './env'
 
-const SECRET = process.env.JWT_SECRET!
+const SECRET = env.JWT_SECRET
 
 export function createJWT(userId: string) {
   return jwt.sign({ userId }, SECRET, { expiresIn: '3d' })

@@ -1,8 +1,9 @@
 import OpenAI from 'openai'
 import type { Stage1Result } from './stage1-analyze'
+import { env } from '../../lib/env'
 
 const client = new OpenAI({
-  apiKey:  process.env.DEEPSEEK_API_KEY ?? process.env.apiKey ?? '',
+  apiKey:  env.DEEPSEEK_API_KEY,
   baseURL: 'https://api.deepseek.com',
 })
 

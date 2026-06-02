@@ -1,12 +1,9 @@
 import IORedis from 'ioredis'
+import { env } from './env'
 
-if (!process.env.REDIS_URL) {
-  throw new Error('REDIS_URL is required')
-}
+console.log('[redis] connecting to', env.REDIS_URL.replace(/:[^:@]+@/, ':***@'))
 
-console.log('[redis] connecting to', process.env.REDIS_URL.replace(/:[^:@]+@/, ':***@'))
-
-export const redis = new IORedis(process.env.REDIS_URL, {
+export const redis = new IORedis(env.REDIS_URL, {
   maxRetriesPerRequest: null,
   enableReadyCheck: false,
 })

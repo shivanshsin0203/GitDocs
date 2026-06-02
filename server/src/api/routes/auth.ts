@@ -1,12 +1,19 @@
 import express from 'express'
 import { randomBytes } from 'node:crypto'
+import { z } from 'zod'
 import { db } from '../../db'
 import { users } from '../../db/schema'
 import { createJWT } from '../../lib/jwt'
+import { env } from '../../lib/env'
 
 const router = express.Router()
 
-const FRONTEND_URL = process.env.FRONTEND_URL ?? 'http://localhost:5173'
+const FRONTEND_URL = env.FRONTEND_URL
+
+const callbackQuerySchema = z.object({
+  code:  z.string().min(1).max(512),
+  state: z.string().min(1).max(128),
+})
 
 function redirectToError(res: express.Response, reason: string) {
   return res.redirect(`${FRONTEND_URL}/auth/error?reason=${reason}`)
@@ -21,8 +28,8 @@ router.get("/login", (_req, res) => {
     maxAge:   10 * 60 * 1000,
   })
   const params = new URLSearchParams({
-    client_id:    process.env.GITHUB_CLIENT_ID ?? '',
-    redirect_uri: process.env.GITHUB_CALLBACK_URL ?? '',
+    client_id:    env.GITHUB_CLIENT_ID,
+    redirect_uri: env.GITHUB_CALLBACK_URL,
     scope:        'read:user user:email public_repo',
     state,
   })
@@ -32,15 +39,17 @@ router.get("/login", (_req, res) => {
 
 router.get("/callback", async (req, res) => {
   try {
-    const { code, state } = req.query
     const cookieState = req.cookies?.oauth_state
     res.clearCookie('oauth_state')
 
-    if (!state || !cookieState || state !== cookieState) {
-      return redirectToError(res, 'state_mismatch')
+    const parsed = callbackQuerySchema.safeParse(req.query)
+    if (!parsed.success) {
+      return redirectToError(res, 'invalid_callback_params')
     }
-    if (typeof code !== 'string' || !code) {
-      return redirectToError(res, 'missing_code')
+    const { code, state } = parsed.data
+
+    if (!cookieState || state !== cookieState) {
+      return redirectToError(res, 'state_mismatch')
     }
 
     const tokenRes = await fetch(
@@ -52,10 +61,10 @@ router.get("/callback", async (req, res) => {
           'Accept':       'application/json',
         },
         body: JSON.stringify({
-          client_id:     process.env.GITHUB_CLIENT_ID,
-          client_secret: process.env.GITHUB_CLIENT_SECRET,
+          client_id:     env.GITHUB_CLIENT_ID,
+          client_secret: env.GITHUB_CLIENT_SECRET,
           code,
-          redirect_uri:  process.env.GITHUB_CALLBACK_URL,
+          redirect_uri:  env.GITHUB_CALLBACK_URL,
         })
       }
     )

@@ -1,6 +1,8 @@
 import { Router } from "express";
 import { randomBytes, randomUUID } from "node:crypto";
+import { z } from "zod";
 import { authenticate } from "../middleware/auth";
+import { validate } from "../middleware/validate";
 import { db } from "../../db";
 import { projects, users } from "../../db/schema";
 import { and, eq } from "drizzle-orm";
@@ -20,6 +22,32 @@ const MAX_DESC_LEN      = 5000
 // nanoid default alphabet is [A-Za-z0-9_-]
 const IMAGE_PATH_RE     = /^readmeImages\/img-[A-Za-z0-9_-]{8}\.(png|jpg|jpeg|gif|webp)$/
 const ALLOWED_EXTS      = new Set(["png", "jpg", "jpeg", "gif", "webp"])
+
+const projectParamsSchema = z.object({
+  id: z.uuid(),
+})
+type ProjectParams = z.infer<typeof projectParamsSchema>
+
+const prBodySchema = z.object({
+  markdown: z
+    .string()
+    .min(1, "Markdown is required")
+    .refine(
+      (s) => Buffer.byteLength(s, "utf8") <= MAX_MARKDOWN_BYTES,
+      "Markdown exceeds 1 MB",
+    ),
+  title: z.string().trim().min(1, "PR title required").max(MAX_TITLE_LEN),
+  description: z.string().max(MAX_DESC_LEN).default(""),
+  images: z
+    .array(
+      z.object({
+        path: z.string().regex(IMAGE_PATH_RE, "Invalid image path"),
+        contentBase64: z.string().min(1),
+      }),
+    )
+    .default([]),
+})
+type PrBody = z.infer<typeof prBodySchema>
 
 // Magic-byte sniff to confirm the claimed extension matches the actual bytes.
 function sniffExt(buf: Buffer): string | null {
@@ -45,12 +73,9 @@ function extMatches(claimedExt: string, sniffed: string): boolean {
   return false
 }
 
-router.get("/:id", authenticate, async (req, res) => {
+router.get("/:id", authenticate, validate({ params: projectParamsSchema }), async (req, res) => {
   try {
-    const { id } = req.params
-    if (typeof id !== "string" || !id) {
-      return res.status(400).json({ error: "Invalid project id" })
-    }
+    const { id } = req.validated!.params as ProjectParams
 
     const rows = await db
       .select()
@@ -69,12 +94,9 @@ router.get("/:id", authenticate, async (req, res) => {
   }
 })
 
-router.delete("/:id", authenticate, async (req, res) => {
+router.delete("/:id", authenticate, validate({ params: projectParamsSchema }), async (req, res) => {
   try {
-    const { id } = req.params
-    if (typeof id !== "string" || !id) {
-      return res.status(400).json({ error: "Invalid project id" })
-    }
+    const { id } = req.validated!.params as ProjectParams
 
     const result = await db
       .delete(projects)
@@ -93,12 +115,9 @@ router.delete("/:id", authenticate, async (req, res) => {
   }
 })
 
-router.post("/:id/retry", authenticate, async (req, res) => {
+router.post("/:id/retry", authenticate, validate({ params: projectParamsSchema }), async (req, res) => {
   try {
-    const { id } = req.params
-    if (typeof id !== "string" || !id) {
-      return res.status(400).json({ error: "Invalid project id" })
-    }
+    const { id } = req.validated!.params as ProjectParams
 
     const rows = await db
       .select()
@@ -170,41 +189,22 @@ router.post("/:id/retry", authenticate, async (req, res) => {
   }
 })
 
-router.post("/:id/pr", authenticate, async (req, res) => {
+router.post(
+  "/:id/pr",
+  authenticate,
+  validate({ params: projectParamsSchema, body: prBodySchema }),
+  async (req, res) => {
   try {
-    const { id } = req.params
-    if (typeof id !== "string" || !id) {
-      return res.status(400).json({ error: "Invalid project id" })
-    }
+    const { id } = req.validated!.params as ProjectParams
+    const { markdown, title, description, images: incomingImages } =
+      req.validated!.body as PrBody
 
-    const body = req.body ?? {}
-    const markdown = typeof body.markdown === "string" ? body.markdown : ""
-    const title = typeof body.title === "string" ? body.title.trim() : ""
-    const description = typeof body.description === "string" ? body.description : ""
-    const incomingImages = Array.isArray(body.images) ? body.images : []
-
-    // Basic shape validation
-    if (!markdown || Buffer.byteLength(markdown, "utf8") > MAX_MARKDOWN_BYTES) {
-      return res.status(400).json({ error: "Markdown missing or exceeds 1 MB" })
-    }
-    if (!title || title.length > MAX_TITLE_LEN) {
-      return res.status(400).json({ error: "PR title required (max 120 chars)" })
-    }
-    if (description.length > MAX_DESC_LEN) {
-      return res.status(400).json({ error: "PR description exceeds 5 KB" })
-    }
-
-    // Validate images
+    // Per-image checks that need the decoded buffer (size + magic-byte sniff)
+    // stay here — they can't be expressed as a static schema.
     const seenPaths = new Set<string>()
     let totalBytes = 0
     const decodedImages: { path: string; contentBase64: string }[] = []
     for (const img of incomingImages) {
-      if (!img || typeof img.path !== "string" || typeof img.contentBase64 !== "string") {
-        return res.status(400).json({ error: "Malformed image entry" })
-      }
-      if (!IMAGE_PATH_RE.test(img.path)) {
-        return res.status(400).json({ error: `Invalid image path: ${img.path}` })
-      }
       if (seenPaths.has(img.path)) {
         return res.status(400).json({ error: `Duplicate image path: ${img.path}` })
       }
@@ -300,6 +300,7 @@ router.post("/:id/pr", authenticate, async (req, res) => {
     console.error(`[projects] POST /:id/pr error:`, err.message)
     res.status(500).json({ error: "Failed to create PR" })
   }
-})
+  },
+)
 
 export default router

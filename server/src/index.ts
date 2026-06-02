@@ -1,4 +1,5 @@
 import "dotenv/config";
+import { env } from "./lib/env";  // validates env vars; exits process on failure
 import express from "express";
 import cors from "cors";
 import apiRouter from "./api/server";
@@ -6,7 +7,7 @@ import cookieParser from "cookie-parser";
 import "./worker";  // boots the BullMQ worker in the same Node process
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = env.PORT;
 
 app.use(cors({origin:"http://localhost:5173",credentials:true}));
 // 35mb cap: 25mb image budget + base64 inflation headroom + small request overhead
