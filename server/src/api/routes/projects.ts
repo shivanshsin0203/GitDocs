@@ -84,13 +84,13 @@ router.get("/:id", authenticate, validate({ params: projectParamsSchema }), asyn
       .limit(1)
 
     if (!rows.length) {
-      return res.status(404).json({ error: "Project not found" })
+      return res.status(404).json({ error: "Project not found", code: "PROJECT_NOT_FOUND" })
     }
 
     res.json({ project: rows[0] })
   } catch (err: any) {
     console.error(`[projects] GET /:id error:`, err.message)
-    res.status(500).json({ error: "Failed to fetch project" })
+    res.status(500).json({ error: "Failed to fetch project", code: "INTERNAL_ERROR" })
   }
 })
 
@@ -104,14 +104,14 @@ router.delete("/:id", authenticate, validate({ params: projectParamsSchema }), a
       .returning({ id: projects.id })
 
     if (!result.length) {
-      return res.status(404).json({ error: "Project not found" })
+      return res.status(404).json({ error: "Project not found", code: "PROJECT_NOT_FOUND" })
     }
 
     console.log(`[projects] deleted ${id} user=${req.userId}`)
     res.status(204).end()
   } catch (err: any) {
     console.error(`[projects] DELETE /:id error:`, err.message)
-    res.status(500).json({ error: "Failed to delete project" })
+    res.status(500).json({ error: "Failed to delete project", code: "INTERNAL_ERROR" })
   }
 })
 
@@ -126,7 +126,7 @@ router.post("/:id/retry", authenticate, validate({ params: projectParamsSchema }
       .limit(1)
 
     if (!rows.length) {
-      return res.status(404).json({ error: "Project not found" })
+      return res.status(404).json({ error: "Project not found", code: "PROJECT_NOT_FOUND" })
     }
     const project = rows[0]
 
@@ -140,7 +140,10 @@ router.post("/:id/retry", authenticate, validate({ params: projectParamsSchema }
       .where(eq(users.id, req.userId!))
 
     if (!user?.githubToken) {
-      return res.status(401).json({ error: "GitHub token missing — please re-authenticate" })
+      return res.status(403).json({
+        error: "GitHub access not configured. Please log out and back in to re-authorize.",
+        code: "GITHUB_TOKEN_MISSING",
+      })
     }
 
     // Drop the existing row so the worker can INSERT fresh on success.
@@ -185,7 +188,7 @@ router.post("/:id/retry", authenticate, validate({ params: projectParamsSchema }
     })
   } catch (err: any) {
     console.error(`[projects] POST /:id/retry error:`, err.message)
-    res.status(500).json({ error: "Failed to retry project" })
+    res.status(500).json({ error: "Failed to retry project", code: "INTERNAL_ERROR" })
   }
 })
 
@@ -240,12 +243,16 @@ router.post(
       .limit(1)
 
     if (!rows.length) {
-      return res.status(404).json({ error: "Project not found" })
+      return res.status(404).json({ error: "Project not found", code: "PROJECT_NOT_FOUND" })
     }
     const project = rows[0]
 
     if (project.prUrl) {
-      return res.status(409).json({ error: "PR already submitted for this project", prUrl: project.prUrl })
+      return res.status(409).json({
+        error: "A pull request has already been submitted for this project.",
+        code: "PR_ALREADY_SUBMITTED",
+        prUrl: project.prUrl,
+      })
     }
 
     // Fetch user token
@@ -256,7 +263,10 @@ router.post(
       .limit(1)
     const githubToken = userRows[0]?.githubToken
     if (!githubToken) {
-      return res.status(401).json({ error: "GitHub token missing — please re-authenticate" })
+      return res.status(403).json({
+        error: "GitHub access not configured. Please log out and back in to re-authorize.",
+        code: "GITHUB_TOKEN_MISSING",
+      })
     }
 
     const branch = `gitdocs/readme-${randomBytes(3).toString("hex")}`
@@ -275,9 +285,16 @@ router.post(
       })
     } catch (err: any) {
       console.error(`[projects] PR creation failed for project=${id}:`, err.message)
-      const status = (err as { status?: number }).status ?? 502
-      return res.status(status === 401 ? 401 : 502).json({
-        error: "PR creation failed",
+      const upstreamStatus = (err as { status?: number }).status
+      if (upstreamStatus === 401 || upstreamStatus === 403) {
+        return res.status(403).json({
+          error: "GitHub rejected your token. Please log out and back in to re-authorize.",
+          code: "GITHUB_TOKEN_INVALID",
+        })
+      }
+      return res.status(502).json({
+        error: "GitHub rejected the pull request. Please try again in a moment.",
+        code: "GITHUB_UPSTREAM_ERROR",
         detail: err.message?.slice(0, 200) ?? "unknown",
       })
     }
@@ -298,7 +315,7 @@ router.post(
     res.json({ prUrl: prResult.prUrl, prNumber: prResult.prNumber, branch: prResult.branch })
   } catch (err: any) {
     console.error(`[projects] POST /:id/pr error:`, err.message)
-    res.status(500).json({ error: "Failed to create PR" })
+    res.status(500).json({ error: "Failed to create PR", code: "INTERNAL_ERROR" })
   }
   },
 )

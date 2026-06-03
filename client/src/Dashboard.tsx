@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { toast } from "react-toastify";
 import type { IconType } from "react-icons";
 import ConfirmDialog from "./components/ConfirmDialog";
+import { toastError, toastInfo, toastSuccess } from "./lib/toast";
 import {
   SiTypescript, SiJavascript, SiPython, SiGo, SiRust, SiOpenjdk, SiKotlin, SiSwift,
   SiC, SiCplusplus, SiSharp, SiPhp, SiRuby, SiDart, SiScala, SiElixir, SiHaskell,
@@ -217,7 +217,10 @@ const API = "http://localhost:3000";
 
 async function fetchProjects(): Promise<Project[]> {
   const res = await fetch(`${API}/api/dashboard/projects`, { credentials: "include" });
-  if (!res.ok) throw new Error("Failed to fetch projects");
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data?.error ?? "We couldn't load your projects.");
+  }
   const data = await res.json();
   return data.projects;
 }
@@ -385,26 +388,10 @@ const Dashboard = () => {
       }
       clearDraft(project.id);
       queryClient.invalidateQueries({ queryKey: ["projects"] });
-      toast(
-        <div className="flex items-start gap-3">
-          <span className="material-symbols-outlined text-[#27c93f] text-[20px] mt-0.5">check_circle</span>
-          <div className="flex flex-col">
-            <span className="font-bold text-white text-sm tracking-wide">Deleted</span>
-            <span className="text-white/50 text-xs mt-1">{project.displayName ?? project.repoName} removed.</span>
-          </div>
-        </div>
-      );
+      toastSuccess("Deleted", `${project.displayName ?? project.repoName} removed.`);
       setConfirm(null);
-    } catch (err: any) {
-      toast(
-        <div className="flex items-start gap-3">
-          <span className="material-symbols-outlined text-[#ffb4ab] text-[20px] mt-0.5">error</span>
-          <div className="flex flex-col">
-            <span className="font-bold text-white text-sm tracking-wide">Couldn't delete</span>
-            <span className="text-white/50 text-xs mt-1">{err.message}</span>
-          </div>
-        </div>
-      );
+    } catch (err: unknown) {
+      toastError("Couldn't delete", err instanceof Error ? err.message : "Unknown error");
     } finally {
       setConfirmBusy(false);
     }
@@ -423,32 +410,16 @@ const Dashboard = () => {
       }
       // Retry mints a new project ID (see architecture §4.16) — the old draft is orphaned.
       clearDraft(project.id);
-      // The failed row is gone; an active job appears via SSE.
       queryClient.invalidateQueries({ queryKey: ["projects"] });
-      const toastTitle = project.status === "failed" ? "Re-queued" : "Regenerating";
-      const toastBody  = project.status === "failed"
-        ? `${project.displayName ?? project.repoName} is back in the queue.`
-        : `${project.displayName ?? project.repoName} will be re-analyzed.`;
-      toast(
-        <div className="flex items-start gap-3">
-          <span className="material-symbols-outlined text-[#aec6ff] text-[20px] mt-0.5">cloud_queue</span>
-          <div className="flex flex-col">
-            <span className="font-bold text-white text-sm tracking-wide">{toastTitle}</span>
-            <span className="text-white/50 text-xs mt-1">{toastBody}</span>
-          </div>
-        </div>
-      );
+      const name = project.displayName ?? project.repoName;
+      if (project.status === "failed") {
+        toastInfo("Re-queued", `${name} is back in the queue.`);
+      } else {
+        toastInfo("Regenerating", `${name} will be re-analyzed.`);
+      }
       setConfirm(null);
-    } catch (err: any) {
-      toast(
-        <div className="flex items-start gap-3">
-          <span className="material-symbols-outlined text-[#ffb4ab] text-[20px] mt-0.5">error</span>
-          <div className="flex flex-col">
-            <span className="font-bold text-white text-sm tracking-wide">Couldn't retry</span>
-            <span className="text-white/50 text-xs mt-1">{err.message}</span>
-          </div>
-        </div>
-      );
+    } catch (err: unknown) {
+      toastError("Couldn't retry", err instanceof Error ? err.message : "Unknown error");
     } finally {
       setConfirmBusy(false);
     }
@@ -530,7 +501,27 @@ const Dashboard = () => {
               </button>
             </div>
 
-            {!hasAny && !projectsQuery.isLoading && (
+            {projectsQuery.isError && (
+              <div className="bg-[#0d1117] border border-[#ffb4ab]/30 rounded-xl py-10 sm:py-12 px-4 flex flex-col items-center text-center mb-6">
+                <div className="w-12 h-12 rounded-full bg-[#ffb4ab]/10 flex items-center justify-center text-[#ffb4ab] mb-4">
+                  <span className="material-symbols-outlined text-[24px]">cloud_off</span>
+                </div>
+                <p className="text-sm font-medium text-white">Couldn't load your projects</p>
+                <p className="text-xs text-white/50 mt-1 max-w-sm">
+                  {projectsQuery.error?.message ?? "Something went wrong on our end."}
+                </p>
+                <button
+                  onClick={() => projectsQuery.refetch()}
+                  disabled={projectsQuery.isFetching}
+                  className="mt-5 bg-white text-black px-4 py-2 rounded-lg text-xs font-bold hover:bg-neutral-200 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  <span className={`material-symbols-outlined text-[15px] ${projectsQuery.isFetching ? "animate-spin" : ""}`}>refresh</span>
+                  {projectsQuery.isFetching ? "Retrying…" : "Try again"}
+                </button>
+              </div>
+            )}
+
+            {!hasAny && !projectsQuery.isLoading && !projectsQuery.isError && (
               <div className="bg-[#0d1117] border border-white/10 rounded-xl py-12 sm:py-16 px-4 flex flex-col items-center text-center">
                 <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center text-white/30 mb-4">
                   <span className="material-symbols-outlined text-[24px]">folder_open</span>

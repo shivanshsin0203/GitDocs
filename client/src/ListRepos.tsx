@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { toast } from "react-toastify";
 import { useUser } from "./hooks/useUser.tsx";
+import { toastError, toastWarn } from "./lib/toast";
 import Navbar from "./components/Navbar";
 import Logo from "./components/Logo";
 
@@ -106,50 +107,93 @@ const ListRepos = () => {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ repoOwner: owner, repoName: name }),
             });
+            const data = await res.json().catch(() => ({}));
             if (!res.ok) {
-                const data = await res.json().catch(() => ({}));
+                if (data?.code === "CAP_REACHED") {
+                    toastError(
+                        "Limit reached",
+                        `You've used all ${data?.limit ?? 8} README slots. Delete one from the dashboard to free a slot, or contact me for more.`,
+                    );
+                    setImportingId(null);
+                    return;
+                }
+                if (data?.code === "GITHUB_TOKEN_MISSING" || data?.code === "GITHUB_TOKEN_INVALID") {
+                    toastError(
+                        "GitHub re-auth needed",
+                        "Your GitHub access expired. Log out and back in to continue.",
+                    );
+                    setImportingId(null);
+                    return;
+                }
                 throw new Error(data?.error ?? "Failed to queue job");
             }
-            toast(
-                <div className="flex items-start gap-3">
-                    <span className="material-symbols-outlined text-[#aec6ff] text-[20px] mt-0.5">cloud_queue</span>
-                    <div className="flex flex-col">
-                        <span className="font-bold text-white text-sm tracking-wide">Queued</span>
-                        <span className="text-white/50 text-xs mt-1">{repo.name} is in the generation queue.</span>
+            const remaining: number | undefined = data?.remaining;
+            const lowSlots = typeof remaining === "number" && remaining <= 2;
+            const noSlots  = remaining === 0;
+            if (noSlots) {
+                toastWarn(
+                    "Last slot used",
+                    `${repo.name} is queued — delete an existing project to generate more.`,
+                );
+            } else if (lowSlots && typeof remaining === "number") {
+                toastWarn(
+                    `Only ${remaining} repo${remaining === 1 ? "" : "s"} left`,
+                    `${repo.name} is in the queue. ${remaining} repo${remaining === 1 ? "" : "s"} left to generate.`,
+                );
+            } else {
+                toast(
+                    <div className="flex items-start gap-3">
+                        <span
+                            className="material-symbols-outlined text-[20px] mt-0.5"
+                            style={{ color: "#aec6ff" }}
+                        >
+                            cloud_queue
+                        </span>
+                        <div className="flex flex-col">
+                            <span className="font-bold text-sm tracking-wide text-white">Queued</span>
+                            <span className="text-white/60 text-xs mt-1 leading-relaxed">
+                                {typeof remaining === "number"
+                                    ? `${repo.name} is in the queue. ${remaining} repo${remaining === 1 ? "" : "s"} left to generate.`
+                                    : `${repo.name} is in the generation queue.`}
+                            </span>
+                        </div>
                     </div>
-                </div>
-            );
+                );
+            }
             navigate("/dashboard");
-        } catch (err: any) {
-            toast(
-                <div className="flex items-start gap-3">
-                    <span className="material-symbols-outlined text-[#ffb4ab] text-[20px] mt-0.5">error</span>
-                    <div className="flex flex-col">
-                        <span className="font-bold text-white text-sm tracking-wide">Couldn't queue</span>
-                        <span className="text-white/50 text-xs mt-1">{err.message}</span>
-                    </div>
-                </div>
+        } catch (err: unknown) {
+            toastError(
+                "Couldn't queue",
+                err instanceof Error ? err.message : "Unknown error",
             );
             setImportingId(null);
         }
     };
 
     useEffect(() => {
+        let cancelled = false;
         const fetchRepos = async () => {
             try {
                 const res = await fetch("http://localhost:3000/api/dashboard/listrepos", {
                     credentials: "include",
                 });
-                if (!res.ok) throw new Error("Failed to fetch repositories");
+                if (!res.ok) {
+                    const data = await res.json().catch(() => ({}));
+                    if (data?.code === "GITHUB_TOKEN_MISSING" || data?.code === "GITHUB_TOKEN_INVALID") {
+                        throw new Error("GitHub access expired. Log out and back in to re-authorize.");
+                    }
+                    throw new Error(data?.error ?? "Failed to fetch repositories");
+                }
                 const data = await res.json();
-                setRepos(data.repos);
-            } catch (err: any) {
-                setError(err.message);
+                if (!cancelled) setRepos(data.repos);
+            } catch (err: unknown) {
+                if (!cancelled) setError(err instanceof Error ? err.message : "Failed to fetch repositories");
             } finally {
-                setLoading(false);
+                if (!cancelled) setLoading(false);
             }
         };
         fetchRepos();
+        return () => { cancelled = true; };
     }, []);
 
     const filteredRepos = repos.filter(repo =>

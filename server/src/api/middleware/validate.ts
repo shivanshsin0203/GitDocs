@@ -19,6 +19,7 @@ export function validate(schemas: Schemas): RequestHandler {
       if (!result.success) {
         return res.status(400).json({
           error: `Invalid request ${key}`,
+          code: "VALIDATION_ERROR",
           issues: result.error.issues.map((i) => ({
             path: i.path.join("."),
             message: i.message,

@@ -506,7 +506,22 @@ const ProjectEditor = () => {
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        const reason = data?.detail || data?.error || "Unknown error";
+        const code: string | undefined = data?.code;
+        let reason: string;
+        if (res.status === 401 || code === "NOT_AUTHENTICATED" || code === "TOKEN_INVALID") {
+          reason = "Your session expired. Please refresh and log in again.";
+        } else if (code === "GITHUB_TOKEN_INVALID" || code === "GITHUB_TOKEN_MISSING") {
+          reason = "GitHub rejected your token. Log out and back in to re-authorize.";
+        } else if (res.status === 409 || code === "PR_ALREADY_SUBMITTED") {
+          reason = "A pull request was already submitted for this project. Refresh to see it.";
+          queryClient.invalidateQueries({ queryKey: ["project", project.id] });
+        } else if (res.status === 502 || code === "GITHUB_UPSTREAM_ERROR") {
+          reason = "GitHub is having trouble accepting the PR. Try again in a moment.";
+        } else if (res.status === 400) {
+          reason = data?.error ?? "Some content in this README isn't valid.";
+        } else {
+          reason = data?.detail || data?.error || "Unknown error";
+        }
         setSubmitError(reason);
         return;
       }
@@ -530,8 +545,8 @@ const ProjectEditor = () => {
       );
 
       navigate("/dashboard");
-    } catch (err: any) {
-      setSubmitError(err.message ?? "Network error");
+    } catch (err: unknown) {
+      setSubmitError(err instanceof Error ? err.message : "Network error");
     } finally {
       setSubmitting(false);
     }
@@ -730,17 +745,19 @@ const ProjectEditor = () => {
           </div>
         </main>
 
-        <SubmitPRModal
-          open={modalOpen}
-          onClose={() => setModalOpen(false)}
-          repoOwner={project.repoOwner}
-          repoName={project.repoName}
-          imageCount={imageCount}
-          totalImageBytes={totalImageBytes}
-          submitting={submitting}
-          errorMessage={submitError}
-          onSubmit={handleSubmitPR}
-        />
+        {modalOpen && (
+          <SubmitPRModal
+            open
+            onClose={() => setModalOpen(false)}
+            repoOwner={project.repoOwner}
+            repoName={project.repoName}
+            imageCount={imageCount}
+            totalImageBytes={totalImageBytes}
+            submitting={submitting}
+            errorMessage={submitError}
+            onSubmit={handleSubmitPR}
+          />
+        )}
       </div>
     </>
   );

@@ -5,7 +5,7 @@ export function authenticate(req: Request, res: Response, next: NextFunction) {
   const token = req.cookies?.token
 
   if (!token) {
-    return res.status(401).json({ error: 'Not authenticated' })
+    return res.status(401).json({ error: 'Not authenticated', code: 'NOT_AUTHENTICATED' })
   }
 
   try {
@@ -13,6 +13,6 @@ export function authenticate(req: Request, res: Response, next: NextFunction) {
     req.userId = payload.userId   // attach to request
     next()
   } catch {
-    return res.status(401).json({ error: 'Invalid or expired token' })
+    return res.status(401).json({ error: 'Invalid or expired token', code: 'TOKEN_INVALID' })
   }
 }

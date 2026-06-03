@@ -12,6 +12,9 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ToastContainer } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
 import { JobStreamProvider } from './hooks/useJobStream.tsx'
+import { installRateLimitInterceptor } from './lib/rateLimitInterceptor.tsx'
+
+installRateLimitInterceptor()
 
 const queryClient = new QueryClient()
 

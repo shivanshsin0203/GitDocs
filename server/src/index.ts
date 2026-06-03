@@ -4,6 +4,7 @@ import express from "express";
 import cors from "cors";
 import apiRouter from "./api/server";
 import cookieParser from "cookie-parser";
+import { globalApiLimiter } from "./api/middleware/rateLimit";
 import "./worker";  // boots the BullMQ worker in the same Node process
 
 const app = express();
@@ -18,7 +19,7 @@ app.get("/", (_req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
 });
 
-app.use("/api", apiRouter);
+app.use("/api", globalApiLimiter, apiRouter);
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);

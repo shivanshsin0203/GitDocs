@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { nanoid } from "nanoid";
 import { formatBytes } from "../lib/attach";
 
@@ -37,29 +37,28 @@ function SubmitPRModal({
   errorMessage,
   onSubmit,
 }: SubmitPRModalProps) {
+  // This component is mount-on-open from the parent (see ProjectEditor.tsx).
+  // Because it remounts each time the modal opens, useState initializers
+  // already give us fresh defaults — no reset effect needed.
   const [title, setTitle] = useState(DEFAULT_TITLE);
   const [description, setDescription] = useState(DEFAULT_DESCRIPTION);
-  const branch = useMemo(() => `gitdocs/readme-${nanoid(6).toLowerCase()}`, [open]);
+  const [branch] = useState(() => `gitdocs/readme-${nanoid(6).toLowerCase()}`);
   const firstFieldRef = useRef<HTMLInputElement | null>(null);
 
-  // Reset to defaults whenever modal opens
+  // Focus the title field after mount
   useEffect(() => {
-    if (!open) return;
-    setTitle(DEFAULT_TITLE);
-    setDescription(DEFAULT_DESCRIPTION);
-    // Focus title field after mount
-    requestAnimationFrame(() => firstFieldRef.current?.focus());
-  }, [open]);
+    const id = requestAnimationFrame(() => firstFieldRef.current?.focus());
+    return () => cancelAnimationFrame(id);
+  }, []);
 
   // ESC to close
   useEffect(() => {
-    if (!open) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape" && !submitting) onClose();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [open, submitting, onClose]);
+  }, [submitting, onClose]);
 
   if (!open) return null;
 

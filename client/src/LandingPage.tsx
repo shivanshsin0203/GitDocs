@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { useNavigate } from "react-router";
 import Logo from "./components/Logo";
+import { toastError } from "./lib/toast";
 import "./landing-page.css";
 
 const API_BASE = "http://localhost:3000/api/auth";
@@ -47,6 +48,12 @@ function LandingPage() {
     onSuccess: (url) => {
       setIsRedirecting(true);
       window.location.href = url;
+    },
+    onError: () => {
+      toastError(
+        "Login unavailable",
+        "Couldn't reach the login service. Please try again in a moment.",
+      );
     },
   });
 

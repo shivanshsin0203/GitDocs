@@ -10,49 +10,107 @@ const PR_STATUS_TTL_MS = 120 * 1000;
 
 const router = Router();
 
-router.get("/me",authenticate,async(req,res)=>{
-    const user=await db.select().from(users).where(eq(users.id,req.userId!))
-    const response={message:"success",user:{avatar:user[0].avatar,name:user[0].name,email:user[0].email,username:user[0].username}}
-    res.json(response)
+router.get("/me", authenticate, async (req, res) => {
+    try {
+        const user = await db.select().from(users).where(eq(users.id, req.userId!))
+        if (!user.length) {
+            return res.status(404).json({
+                error: "User not found. Please log in again.",
+                code: "USER_NOT_FOUND",
+            })
+        }
+        res.json({
+            message: "success",
+            user: {
+                avatar:   user[0].avatar,
+                name:     user[0].name,
+                email:    user[0].email,
+                username: user[0].username,
+            },
+        })
+    } catch (err: any) {
+        console.error(`[dashboard] /me error:`, err.message)
+        res.status(500).json({ error: "Failed to fetch user", code: "INTERNAL_ERROR" })
+    }
 })
 
-router.get("/listrepos",authenticate,async(req,res)=>{
+interface GitHubRepo {
+    id: number
+    name: string
+    full_name: string
+    private: boolean
+    html_url: string
+    description: string | null
+    language: string | null
+    default_branch: string
+    updated_at: string
+}
+
+router.get("/listrepos", authenticate, async (req, res) => {
     try {
-        const user=await db.select({githubToken:users.githubToken}).from(users).where(eq(users.id,req.userId!))
-        if(!user.length || !user[0].githubToken){
-            return res.status(404).json({error:"GitHub token not found"})
-        }
-        const repos:any[]=[]
-        let page=1
-        while(true){
-            const response=await fetch(`https://api.github.com/user/repos?per_page=100&page=${page}`,{
-                headers:{
-                    Authorization:`Bearer ${user[0].githubToken}`,
-                    Accept:"application/vnd.github+json"
-                }
+        const user = await db
+            .select({ githubToken: users.githubToken })
+            .from(users)
+            .where(eq(users.id, req.userId!))
+        if (!user.length || !user[0].githubToken) {
+            return res.status(403).json({
+                error: "GitHub access not configured. Please log in again.",
+                code: "GITHUB_TOKEN_MISSING",
             })
-            if(!response.ok){
-                return res.status(response.status).json({error:"Failed to fetch repos from GitHub"})
+        }
+
+        const repos: GitHubRepo[] = []
+        let page = 1
+        while (true) {
+            const response = await fetch(
+                `https://api.github.com/user/repos?per_page=100&page=${page}`,
+                {
+                    headers: {
+                        Authorization: `Bearer ${user[0].githubToken}`,
+                        Accept: "application/vnd.github+json",
+                    },
+                },
+            )
+            if (!response.ok) {
+                // Map GitHub's 401/403 to a domain-specific code so the client
+                // can distinguish "your GitHub token is bad" from "you logged out".
+                if (response.status === 401 || response.status === 403) {
+                    return res.status(403).json({
+                        error: "GitHub rejected your token. Please log out and back in to re-authorize.",
+                        code: "GITHUB_TOKEN_INVALID",
+                    })
+                }
+                return res.status(502).json({
+                    error: `GitHub returned ${response.status} while listing repos.`,
+                    code: "GITHUB_UPSTREAM_ERROR",
+                })
             }
-            const data=await response.json()
-            if(data.length===0) break
+            const data = (await response.json().catch(() => null)) as GitHubRepo[] | null
+            if (!Array.isArray(data)) {
+                return res.status(502).json({
+                    error: "Unexpected response from GitHub.",
+                    code: "GITHUB_UPSTREAM_ERROR",
+                })
+            }
+            if (data.length === 0) break
             repos.push(...data)
             page++
         }
-        const repoList=repos.map(r=>({
-            id:r.id,
-            name:r.name,
-            full_name:r.full_name,
-            private:r.private,
-            html_url:r.html_url,
-            description:r.description,
-            language:r.language,
-            default_branch:r.default_branch,
-            updated_at:r.updated_at
+        const repoList = repos.map((r) => ({
+            id:             r.id,
+            name:           r.name,
+            full_name:      r.full_name,
+            private:        r.private,
+            html_url:       r.html_url,
+            description:    r.description,
+            language:       r.language,
+            default_branch: r.default_branch,
+            updated_at:     r.updated_at,
         }))
-        res.json({message:"success",repos:repoList})
-    } catch(err){
-        res.status(500).json({error:"Internal server error"})
+        res.json({ message: "success", repos: repoList })
+    } catch (err: any) {
+        console.error(`[dashboard] /listrepos error:`, err.message)
+        res.status(500).json({ error: "Failed to list repos", code: "INTERNAL_ERROR" })
     }
 })
 
@@ -131,7 +189,7 @@ router.get("/projects", authenticate, async (req, res) => {
         res.json({ projects: rows })
     } catch (err: any) {
         console.error(`[dashboard] /projects error:`, err.message, "| cause:", err.cause?.message ?? err.cause ?? "(none)")
-        res.status(500).json({ error: "Failed to fetch projects" })
+        res.status(500).json({ error: "Failed to fetch projects", code: "INTERNAL_ERROR" })
     }
 })
 
@@ -150,7 +208,7 @@ router.get("/active", authenticate, async (req, res) => {
         res.json({ active })
     } catch (err: any) {
         console.error(`[dashboard] /active error:`, err.message)
-        res.status(500).json({ error: "Failed to fetch active jobs" })
+        res.status(500).json({ error: "Failed to fetch active jobs", code: "INTERNAL_ERROR" })
     }
 })
 

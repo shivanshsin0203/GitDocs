@@ -1,17 +1,18 @@
 import { Router } from "express";
 import { randomUUID } from "node:crypto";
-import { eq } from "drizzle-orm";
+import { eq, count } from "drizzle-orm";
 import { z } from "zod";
 import { authenticate } from "../middleware/auth";
 import { validate } from "../middleware/validate";
 import { db } from "../../db";
-import { users } from "../../db/schema";
+import { projects, users } from "../../db/schema";
 import { redis } from "../../lib/redis";
 import { readmeQueue } from "../../lib/queue";
 
 const router = Router();
 
 const JOB_HASH_TTL = 6 * 3600;
+const MAX_PROJECTS_PER_USER = 8;
 
 const generateBodySchema = z.object({
   repoOwner: z
@@ -32,6 +33,25 @@ router.post("/", authenticate, validate({ body: generateBodySchema }), async (re
   try {
     const { repoOwner, repoName } = req.validated!.body as GenerateBody;
 
+    const [[{ value: projectCount }], activeCount] = await Promise.all([
+      db
+        .select({ value: count() })
+        .from(projects)
+        .where(eq(projects.userId, req.userId!)),
+      redis.scard(`user:${req.userId!}:active`),
+    ]);
+    const usedSlots = projectCount + activeCount;
+
+    if (usedSlots >= MAX_PROJECTS_PER_USER) {
+      console.warn(`[generate] cap reached user=${req.userId} projects=${projectCount} active=${activeCount}`);
+      return res.status(403).json({
+        error: `You've reached the ${MAX_PROJECTS_PER_USER}-README limit. Delete an existing project to free a slot, or contact the owner.`,
+        code: "CAP_REACHED",
+        remaining: 0,
+        limit: MAX_PROJECTS_PER_USER,
+      });
+    }
+
     const [user] = await db
       .select({ githubToken: users.githubToken })
       .from(users)
@@ -39,7 +59,10 @@ router.post("/", authenticate, validate({ body: generateBodySchema }), async (re
 
     if (!user?.githubToken) {
       console.warn(`[generate] no github token for user=${req.userId}`);
-      return res.status(400).json({ error: "GitHub token not found for user" });
+      return res.status(403).json({
+        error: "GitHub access not configured. Please log out and back in to re-authorize.",
+        code: "GITHUB_TOKEN_MISSING",
+      });
     }
 
     const jobId = randomUUID();
@@ -77,10 +100,12 @@ router.post("/", authenticate, validate({ body: generateBodySchema }), async (re
       repoName,
       stage: "queued",
       updatedAt: now,
+      remaining: MAX_PROJECTS_PER_USER - usedSlots - 1,
+      limit: MAX_PROJECTS_PER_USER,
     });
   } catch (err: any) {
     console.error("[generate] error:", err);
-    return res.status(500).json({ error: "Failed to enqueue job" });
+    return res.status(500).json({ error: "Failed to enqueue job", code: "INTERNAL_ERROR" });
   }
 });
 

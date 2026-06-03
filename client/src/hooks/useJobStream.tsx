@@ -26,6 +26,7 @@ interface JobStreamContextValue {
 
 const JobStreamContext = createContext<JobStreamContextValue>({ active: [] });
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useJobStream() {
   return useContext(JobStreamContext);
 }
@@ -74,7 +75,9 @@ export function JobStreamProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!user) {
-      // user logged out — clear stale state and close any open stream
+      // user logged out — clear stale state and close any open stream.
+      // This setState-in-effect is the intended "reset on external dep" pattern.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setActive([]);
       return;
     }

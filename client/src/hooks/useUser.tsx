@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router";
-import { toast } from "react-toastify";
 import { useEffect } from "react";
+import { toastError, toastWarn } from "../lib/toast";
 
 export interface User {
   avatar: string;
@@ -15,7 +15,8 @@ async function fetchUser(): Promise<User> {
     credentials: "include",
   });
   if (res.status === 401) throw new Error("UNAUTHORIZED");
-  if (!res.ok) throw new Error("Failed to fetch user");
+  if (res.status === 404) throw new Error("USER_NOT_FOUND");
+  if (!res.ok) throw new Error("FETCH_FAILED");
   const data = await res.json();
   return data.user;
 }
@@ -31,17 +32,21 @@ export function useUser() {
   });
 
   useEffect(() => {
-    if (query.error?.message === "UNAUTHORIZED") {
-      toast(
-        <div className="flex items-start gap-3">
-          <span className="material-symbols-outlined text-[#ffb4ab] text-[20px] mt-0.5">lock</span>
-          <div className="flex flex-col">
-            <span className="font-bold text-white text-sm tracking-wide">Not Authorized</span>
-            <span className="text-white/50 text-xs mt-1">Please log in to access your workspace.</span>
-          </div>
-        </div>
+    const message = query.error?.message;
+    if (!message) return;
+    if (message === "UNAUTHORIZED" || message === "USER_NOT_FOUND") {
+      toastWarn(
+        "Not authorized",
+        message === "USER_NOT_FOUND"
+          ? "Your account couldn't be found. Please log in again."
+          : "Please log in to access your workspace.",
       );
       navigate("/");
+    } else if (message === "FETCH_FAILED") {
+      toastError(
+        "Couldn't reach server",
+        "Check your connection and try again.",
+      );
     }
   }, [query.error, navigate]);
 

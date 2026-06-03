@@ -1,7 +1,8 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import type { User } from "../hooks/useUser.tsx";
+import { toastWarn } from "../lib/toast";
 import Logo from "./Logo";
 
 interface NavbarProps {
@@ -15,39 +16,45 @@ const Navbar = ({ user }: NavbarProps) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const avatarBtnRef = useRef<HTMLButtonElement>(null);
-  const isDropdownOpenRef = useRef(false);
 
+  // Re-attach the listener whenever the dropdown opens — cheaper and lint-friendlier
+  // than mirroring open-state into a ref.
   useEffect(() => {
-    isDropdownOpenRef.current = isDropdownOpen;
-  }, [isDropdownOpen]);
-
-  useEffect(() => {
+    if (!isDropdownOpen) return;
     const handleClickOutside = (event: MouseEvent) => {
-      if (!isDropdownOpenRef.current) return;
       if (dropdownRef.current?.contains(event.target as Node)) return;
       if (avatarBtnRef.current?.contains(event.target as Node)) return;
       setIsDropdownOpen(false);
     };
     document.addEventListener("click", handleClickOutside);
     return () => document.removeEventListener("click", handleClickOutside);
-  }, []);
+  }, [isDropdownOpen]);
 
-  const toggleDropdown = useCallback(() => {
-    setIsDropdownOpen((prev) => !prev);
-  }, []);
+  const toggleDropdown = () => setIsDropdownOpen((prev) => !prev);
 
-  const handleLogout = useCallback(async () => {
+  const handleLogout = async () => {
+    // Clear client state and navigate regardless of server outcome — a stuck
+    // server cookie is less bad than the user being trapped in a logged-out UI.
+    let serverError = false;
     try {
-      await fetch("http://localhost:3000/api/auth/logout", {
+      const res = await fetch("http://localhost:3000/api/auth/logout", {
         method: "POST",
         credentials: "include",
       });
-      queryClient.clear();
-      navigate("/");
+      if (!res.ok) serverError = true;
     } catch (err) {
       console.error("Logout failed", err);
+      serverError = true;
     }
-  }, [navigate]);
+    queryClient.clear();
+    navigate("/");
+    if (serverError) {
+      toastWarn(
+        "Signed out locally",
+        "We couldn't reach the server to clear your session. You're logged out on this device.",
+      );
+    }
+  };
 
   const isDashboard = location.pathname === "/dashboard";
 
