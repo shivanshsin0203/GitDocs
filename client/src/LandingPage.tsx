@@ -320,21 +320,32 @@ function LandingPage() {
           <div className="space-y-6 text-center md:text-left">
             <Logo size="md" />
             <p className="text-xs font-bold uppercase tracking-[0.2em] text-white/40">
-              © 2024 gitdocs. Built for developers.
+              © {new Date().getFullYear()} gitdocs. Built for developers.
             </p>
           </div>
           <div className="flex flex-wrap justify-center gap-10">
-            {["Privacy", "Terms", "GitHub", "Twitter", "Changelog"].map(
-              (link) => (
-                <a
-                  key={link}
-                  className="text-xs font-bold uppercase tracking-[0.2em] text-white/40 hover:text-white transition-colors"
-                  href="#"
-                >
-                  {link}
-                </a>
-              )
-            )}
+            <a
+              className="text-xs font-bold uppercase tracking-[0.2em] text-white/40 hover:text-white transition-colors"
+              href="https://github.com/shivanshsin0203"
+              target="_blank"
+              rel="noreferrer"
+            >
+              GitHub
+            </a>
+            <a
+              className="text-xs font-bold uppercase tracking-[0.2em] text-white/40 hover:text-white transition-colors"
+              href="https://x.com/ShivanshSi0203"
+              target="_blank"
+              rel="noreferrer"
+            >
+              X
+            </a>
+            <button
+              onClick={() => navigate("/support")}
+              className="text-xs font-bold uppercase tracking-[0.2em] text-white/40 hover:text-white transition-colors"
+            >
+              Support
+            </button>
           </div>
         </div>
       </footer>

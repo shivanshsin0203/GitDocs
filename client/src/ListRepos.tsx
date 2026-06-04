@@ -335,7 +335,9 @@ const ListRepos = () => {
                         </div>
 
                         <div className="mt-6 text-center">
-                            <p className="text-xs text-white/40">Don't see your repository? <span className="text-white hover:underline">Try Searching it in search bar above.</span></p>
+                            <p className="text-xs text-white/40">
+                                Missing a repo? Make sure it's public, or re-authorize on GitHub to grant access to private ones.
+                            </p>
                         </div>
 
                     </div>
@@ -344,10 +346,12 @@ const ListRepos = () => {
                 <footer className="w-full border-t border-white/5 bg-black mt-auto">
                     <div className="flex justify-between items-center px-6 py-8 max-w-7xl mx-auto">
                         <Logo size="sm" className="opacity-60" />
-                        <div className="flex gap-6">
-                            <a className="text-xs font-bold uppercase tracking-[0.2em] text-white/40 hover:text-white transition-colors" href="#">Support</a>
-                            <a className="text-xs font-bold uppercase tracking-[0.2em] text-white/40 hover:text-white transition-colors" href="#">Docs</a>
-                        </div>
+                        <button
+                            onClick={() => navigate("/support")}
+                            className="text-xs font-bold uppercase tracking-[0.2em] text-white/40 hover:text-white transition-colors"
+                        >
+                            Support
+                        </button>
                     </div>
                 </footer>
             </div>

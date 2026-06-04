@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { toast } from "react-toastify";
 import MDEditor from "@uiw/react-md-editor";
 import "@uiw/react-md-editor/markdown-editor.css";
 import { useUser } from "./hooks/useUser.tsx";
@@ -10,6 +9,7 @@ import Navbar from "./components/Navbar";
 import Logo from "./components/Logo";
 import MarkdownPreview from "./components/MarkdownPreview";
 import SubmitPRModal from "./components/SubmitPRModal";
+import { toastError, toastSuccess } from "./lib/toast";
 import {
   acceptImageFiles,
   altFromFilename,
@@ -107,30 +107,6 @@ const EDITOR_OVERRIDES = `
   background-color: rgba(255,255,255,0.06);
 }
 `;
-
-function toastError(title: string, subtitle: string) {
-  toast(
-    <div className="flex items-start gap-3">
-      <span className="material-symbols-outlined text-[#ffb4ab] text-[20px] mt-0.5">error</span>
-      <div className="flex flex-col">
-        <span className="font-bold text-white text-sm tracking-wide">{title}</span>
-        <span className="text-white/50 text-xs mt-1">{subtitle}</span>
-      </div>
-    </div>
-  );
-}
-
-function toastSuccess(title: string, body: React.ReactNode) {
-  toast(
-    <div className="flex items-start gap-3">
-      <span className="material-symbols-outlined text-[#27c93f] text-[20px] mt-0.5">check_circle</span>
-      <div className="flex flex-col">
-        <span className="font-bold text-white text-sm tracking-wide">{title}</span>
-        <span className="text-white/60 text-xs mt-1">{body}</span>
-      </div>
-    </div>
-  );
-}
 
 function formatDraftAge(ts: number): string {
   const diff = Math.max(0, Date.now() - ts);

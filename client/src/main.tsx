@@ -8,6 +8,7 @@ import Dashboard from './Dashboard.tsx'
 import ListRepos from './ListRepos.tsx'
 import AuthError from './AuthError.tsx'
 import ProjectEditor from './ProjectEditor.tsx'
+import Support from './Support.tsx'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ToastContainer } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
@@ -36,6 +37,7 @@ createRoot(document.getElementById('root')!).render(
             <Route path='/dashboard' element={<Dashboard/>}/>
             <Route path='/listrepos' element={<ListRepos/>}/>
             <Route path='/project/:id' element={<ProjectEditor/>}/>
+            <Route path='/support' element={<Support/>}/>
             <Route path='/auth/error' element={<AuthError/>}/>
           </Routes>
         </JobStreamProvider>

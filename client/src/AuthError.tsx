@@ -5,6 +5,10 @@ const REASON_MESSAGES: Record<string, { title: string; description: string }> = 
     title: "Session verification failed",
     description: "Your sign-in request couldn't be verified. Please try again.",
   },
+  invalid_callback_params: {
+    title: "Bad sign-in response",
+    description: "GitHub sent us a response we couldn't parse. Please try signing in again.",
+  },
   missing_code: {
     title: "Sign-in interrupted",
     description: "GitHub didn't return an authorization code.",

@@ -643,14 +643,12 @@ const Dashboard = () => {
         <footer className="w-full border-t border-white/5 bg-black mt-auto">
           <div className="flex justify-between items-center px-4 sm:px-6 lg:px-8 py-6 sm:py-8 max-w-7xl mx-auto">
             <Logo size="sm" className="opacity-60" />
-            <div className="flex gap-4 sm:gap-6">
-              <a className="text-[10px] sm:text-xs font-bold uppercase tracking-[0.2em] text-white/40 hover:text-white transition-colors" href="#">
-                Support
-              </a>
-              <a className="text-[10px] sm:text-xs font-bold uppercase tracking-[0.2em] text-white/40 hover:text-white transition-colors" href="#">
-                Docs
-              </a>
-            </div>
+            <button
+              onClick={() => navigate("/support")}
+              className="text-[10px] sm:text-xs font-bold uppercase tracking-[0.2em] text-white/40 hover:text-white transition-colors"
+            >
+              Support
+            </button>
           </div>
         </footer>
       </div>

@@ -79,7 +79,7 @@ const Navbar = ({ user }: NavbarProps) => {
               <span>{user?.username}</span>
             </div>
           ) : (
-            <div className="flex items-center gap-2 text-sm font-medium text-white/50">
+            <div className="cursor-pointer flex items-center gap-2 text-sm font-medium text-white/50">
               {user?.avatar && (
                 <img
                   src={user.avatar}
@@ -94,16 +94,12 @@ const Navbar = ({ user }: NavbarProps) => {
           )}
         </div>
 
-        <div className="flex items-center gap-4">
-          <button className="text-white/40 hover:text-white transition-colors flex items-center">
-            <span className="material-symbols-outlined text-[20px]">notifications</span>
-          </button>
-
-          <div className="relative">
+        <div className=" flex items-center gap-4">
+          <div className="relative ">
             <button
               ref={avatarBtnRef}
               onClick={toggleDropdown}
-              className="w-8 h-8 rounded-full overflow-hidden border border-white/20 hover:border-[#27c93f]/50 transition-all focus:outline-none focus:ring-2 focus:ring-[#27c93f]/40"
+              className="cursor-pointer w-8 h-8 rounded-full overflow-hidden border border-white/20 hover:border-[#27c93f]/50 transition-all focus:outline-none focus:ring-2 focus:ring-[#27c93f]/40"
             >
               {user?.avatar && (
                 <img src={user.avatar} alt="Avatar" className="w-full h-full object-cover" />
@@ -123,12 +119,6 @@ const Navbar = ({ user }: NavbarProps) => {
                 <p className="text-xs text-[#a1a1a1] truncate">{user?.email}</p>
               </div>
               <div className="py-1">
-                <button className="w-full text-left px-4 py-2 text-sm text-white/70 hover:text-white hover:bg-white/5 flex items-center gap-2 transition-colors">
-                  <span className="material-symbols-outlined text-[16px]">settings</span>
-                  Settings
-                </button>
-              </div>
-              <div className="py-1 border-t border-white/5">
                 <button
                   onClick={handleLogout}
                   className="w-full text-left px-4 py-2 text-sm text-[#ffb4ab] hover:bg-[#ffb4ab]/10 flex items-center gap-2 transition-colors"
@@ -142,13 +132,6 @@ const Navbar = ({ user }: NavbarProps) => {
         </div>
       </div>
 
-      {isDashboard && (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 flex gap-6 text-sm">
-          <a href="#" className="pb-3 border-b-2 border-white text-white font-medium">Overview</a>
-          <a href="#" className="pb-3 border-b-2 border-transparent text-white/50 hover:text-white transition-colors">Integrations</a>
-          <a href="#" className="pb-3 border-b-2 border-transparent text-white/50 hover:text-white transition-colors">Settings</a>
-        </div>
-      )}
     </nav>
   );
 };
