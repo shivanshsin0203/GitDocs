@@ -12,12 +12,18 @@ export interface User {
 }
 
 async function fetchUser(): Promise<User> {
-  const res = await fetch(`${API_BASE}/api/dashboard/me`, {
-    credentials: "include",
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${API_BASE}/api/dashboard/me`, {
+      credentials: "include",
+    });
+  } catch {
+    // fetch() throws on DNS failure, server unreachable, CORS, etc.
+    throw new Error("NETWORK_ERROR");
+  }
   if (res.status === 401) throw new Error("UNAUTHORIZED");
   if (res.status === 404) throw new Error("USER_NOT_FOUND");
-  if (!res.ok) throw new Error("FETCH_FAILED");
+  if (!res.ok) throw new Error("SERVER_ERROR");
   const data = await res.json();
   return data.user;
 }
@@ -42,13 +48,18 @@ export function useUser() {
           ? "Your account couldn't be found. Please log in again."
           : "Please log in to access your workspace.",
       );
-      navigate("/");
-    } else if (message === "FETCH_FAILED") {
+    } else if (message === "NETWORK_ERROR") {
       toastError(
         "Couldn't reach server",
-        "Check your connection and try again.",
+        "The service is unavailable right now. Please try again later.",
+      );
+    } else {
+      toastError(
+        "Server error",
+        "Something went wrong on our end. Please try again later.",
       );
     }
+    navigate("/");
   }, [query.error, navigate]);
 
   return query;

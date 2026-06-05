@@ -28,7 +28,7 @@ createRoot(document.getElementById('root')!).render(
           autoClose={3000}
           hideProgressBar={true}
           closeButton={false}
-          toastClassName={() => "bg-[#0d1117] text-[#e2e2e2] font-sans text-sm border border-white/10 rounded-xl shadow-[0_0_20px_rgba(0,0,0,0.5)] flex p-4 mb-4 relative overflow-hidden items-center w-max mx-auto"}
+          toastClassName={() => "bg-[#0d1117] text-[#e2e2e2] font-sans text-sm border border-white/10 rounded-xl shadow-[0_0_20px_rgba(0,0,0,0.5)] flex p-4 mb-4 relative overflow-hidden items-start w-[calc(100vw-1.5rem)] sm:w-auto sm:max-w-md mx-auto"}
         />
         <JobStreamProvider>
           <Routes>
