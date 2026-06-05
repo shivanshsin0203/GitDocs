@@ -3,6 +3,7 @@ import { useNavigate } from "react-router";
 import { toast } from "react-toastify";
 import { useUser } from "./hooks/useUser.tsx";
 import { toastError, toastWarn } from "./lib/toast";
+import { API_BASE } from "./lib/api";
 import Navbar from "./components/Navbar";
 import Logo from "./components/Logo";
 
@@ -101,7 +102,7 @@ const ListRepos = () => {
         const [owner, name] = repo.full_name.split("/");
         setImportingId(repo.id);
         try {
-            const res = await fetch("http://localhost:3000/api/generate", {
+            const res = await fetch(`${API_BASE}/api/generate`, {
                 method: "POST",
                 credentials: "include",
                 headers: { "Content-Type": "application/json" },
@@ -174,7 +175,7 @@ const ListRepos = () => {
         let cancelled = false;
         const fetchRepos = async () => {
             try {
-                const res = await fetch("http://localhost:3000/api/dashboard/listrepos", {
+                const res = await fetch(`${API_BASE}/api/dashboard/listrepos`, {
                     credentials: "include",
                 });
                 if (!res.ok) {

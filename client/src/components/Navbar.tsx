@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from "react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import type { User } from "../hooks/useUser.tsx";
 import { toastWarn } from "../lib/toast";
+import { API_BASE } from "../lib/api";
 import Logo from "./Logo";
 
 interface NavbarProps {
@@ -37,7 +38,7 @@ const Navbar = ({ user }: NavbarProps) => {
     // server cookie is less bad than the user being trapped in a logged-out UI.
     let serverError = false;
     try {
-      const res = await fetch("http://localhost:3000/api/auth/logout", {
+      const res = await fetch(`${API_BASE}/api/auth/logout`, {
         method: "POST",
         credentials: "include",
       });

@@ -3,9 +3,10 @@ import { useMutation } from "@tanstack/react-query";
 import { useNavigate } from "react-router";
 import Logo from "./components/Logo";
 import { toastError } from "./lib/toast";
+import { API_BASE as API_ROOT } from "./lib/api";
 import "./landing-page.css";
 
-const API_BASE = "http://localhost:3000/api/auth";
+const API_BASE = `${API_ROOT}/api/auth`;
 
 const LANGUAGES = [
   { name: "Python", color: "#4b8bbe" },

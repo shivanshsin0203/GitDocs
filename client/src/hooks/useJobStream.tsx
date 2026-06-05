@@ -2,8 +2,7 @@ import { createContext, useContext, useEffect, useRef, useState, type ReactNode 
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-toastify";
 import { useUser } from "./useUser.tsx";
-
-const API = "http://localhost:3000";
+import { API_BASE as API } from "../lib/api";
 
 export type Stage = "queued" | "analyzing" | "generating" | "completed" | "failed" | "rejected";
 

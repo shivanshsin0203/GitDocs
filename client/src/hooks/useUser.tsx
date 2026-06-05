@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router";
 import { useEffect } from "react";
 import { toastError, toastWarn } from "../lib/toast";
+import { API_BASE } from "../lib/api";
 
 export interface User {
   avatar: string;
@@ -11,7 +12,7 @@ export interface User {
 }
 
 async function fetchUser(): Promise<User> {
-  const res = await fetch("http://localhost:3000/api/dashboard/me", {
+  const res = await fetch(`${API_BASE}/api/dashboard/me`, {
     credentials: "include",
   });
   if (res.status === 401) throw new Error("UNAUTHORIZED");

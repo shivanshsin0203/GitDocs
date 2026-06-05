@@ -13,6 +13,7 @@ import { FaCode, FaCss3Alt } from "react-icons/fa";
 import { useUser } from "./hooks/useUser.tsx";
 import { useJobStream, type Stage } from "./hooks/useJobStream.tsx";
 import { clearDraft, sweepDrafts } from "./lib/draft";
+import { API_BASE as API } from "./lib/api";
 import Navbar from "./components/Navbar";
 import Logo from "./components/Logo";
 
@@ -212,8 +213,6 @@ function regenerateMessage(p: Project): React.ReactNode {
     </>
   );
 }
-
-const API = "http://localhost:3000";
 
 async function fetchProjects(): Promise<Project[]> {
   const res = await fetch(`${API}/api/dashboard/projects`, { credentials: "include" });

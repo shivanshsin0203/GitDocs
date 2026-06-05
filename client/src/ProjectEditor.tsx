@@ -10,6 +10,7 @@ import Logo from "./components/Logo";
 import MarkdownPreview from "./components/MarkdownPreview";
 import SubmitPRModal from "./components/SubmitPRModal";
 import { toastError, toastSuccess } from "./lib/toast";
+import { API_BASE as API } from "./lib/api";
 import {
   acceptImageFiles,
   altFromFilename,
@@ -37,7 +38,6 @@ interface Project {
   updatedAt: string;
 }
 
-const API = "http://localhost:3000";
 const DRAFT_DEBOUNCE_MS = 500;
 
 async function fetchProject(id: string): Promise<Project> {
