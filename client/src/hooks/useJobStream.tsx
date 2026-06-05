@@ -67,7 +67,7 @@ function RejectedToast({ label, error }: { label: string; error?: string }) {
 }
 
 export function JobStreamProvider({ children }: { children: ReactNode }) {
-  const { data: user } = useUser();
+  const { data: user } = useUser({ silent: true });
   const queryClient = useQueryClient();
   const [active, setActive] = useState<ActiveJob[]>([]);
   const connected = useRef(false);

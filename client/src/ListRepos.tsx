@@ -186,7 +186,12 @@ const ListRepos = () => {
                     throw new Error(data?.error ?? "Failed to fetch repositories");
                 }
                 const data = await res.json();
-                if (!cancelled) setRepos(data.repos);
+                if (!cancelled) {
+                    const sorted = [...(data.repos as Repo[])].sort(
+                        (a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime(),
+                    );
+                    setRepos(sorted);
+                }
             } catch (err: unknown) {
                 if (!cancelled) setError(err instanceof Error ? err.message : "Failed to fetch repositories");
             } finally {
@@ -349,7 +354,7 @@ const ListRepos = () => {
                         <Logo size="sm" className="opacity-60" />
                         <button
                             onClick={() => navigate("/support")}
-                            className="text-xs font-bold uppercase tracking-[0.2em] text-white/40 hover:text-white transition-colors"
+                            className=" cursor-pointer text-xs font-bold uppercase tracking-[0.2em] text-white/40 hover:text-white transition-colors"
                         >
                             Support
                         </button>

@@ -343,7 +343,7 @@ function LandingPage() {
             </a>
             <button
               onClick={() => navigate("/support")}
-              className="text-xs font-bold uppercase tracking-[0.2em] text-white/40 hover:text-white transition-colors"
+              className=" cursor-pointer text-xs font-bold uppercase tracking-[0.2em] text-white/40 hover:text-white transition-colors"
             >
               Support
             </button>

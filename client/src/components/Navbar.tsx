@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router";
 import { useQueryClient } from "@tanstack/react-query";
-import type { User } from "../hooks/useUser.tsx";
-import { toastWarn } from "../lib/toast";
+import { markLoggingOut, type User } from "../hooks/useUser.tsx";
+import { toastSuccess, toastWarn } from "../lib/toast";
 import { API_BASE } from "../lib/api";
 import Logo from "./Logo";
 
@@ -36,6 +36,7 @@ const Navbar = ({ user }: NavbarProps) => {
   const handleLogout = async () => {
     // Clear client state and navigate regardless of server outcome — a stuck
     // server cookie is less bad than the user being trapped in a logged-out UI.
+    markLoggingOut();
     let serverError = false;
     try {
       const res = await fetch(`${API_BASE}/api/auth/logout`, {
@@ -54,6 +55,8 @@ const Navbar = ({ user }: NavbarProps) => {
         "Signed out locally",
         "We couldn't reach the server to clear your session. You're logged out on this device.",
       );
+    } else {
+      toastSuccess("Logged out successfully", "See you next time.");
     }
   };
 

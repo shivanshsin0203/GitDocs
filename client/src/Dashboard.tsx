@@ -288,7 +288,7 @@ function ProjectCard({ title, subtitle, description, language, stage, createdAt,
   return (
     <div
       onClick={onClick}
-      className={`group bg-[#0d1117] rounded-xl border border-white/10 ${borderHover} transition-all duration-300 flex flex-col min-h-44 sm:h-48 relative overflow-hidden ${clickable ? "cursor-pointer" : "cursor-default"}`}
+      className={`group bg-[#0d1117] rounded-xl border border-white/10 ${borderHover} transition-all duration-300 flex flex-col min-h-44 sm:min-h-48 relative overflow-hidden ${clickable ? "cursor-pointer" : "cursor-default"}`}
     >
       {(onDelete || onRetry) && (
         <div className="absolute top-2 right-2 z-10 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -644,7 +644,8 @@ const Dashboard = () => {
             <Logo size="sm" className="opacity-60" />
             <button
               onClick={() => navigate("/support")}
-              className="text-[10px] sm:text-xs font-bold uppercase tracking-[0.2em] text-white/40 hover:text-white transition-colors"
+              className=" cursor-pointer text-[10px] sm:text-xs font-bold uppercase tracking-[0.2em] text-white/40 hover:text-white transition-colors"
+              
             >
               Support
             </button>

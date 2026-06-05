@@ -28,7 +28,22 @@ async function fetchUser(): Promise<User> {
   return data.user;
 }
 
-export function useUser() {
+// Suppresses the next auth-error toast triggered by the post-logout refetch.
+// Auto-clears after 1s so a manual visit to /dashboard later still toasts normally.
+let logoutSuppress = false;
+export function markLoggingOut() {
+  logoutSuppress = true;
+  setTimeout(() => { logoutSuppress = false; }, 1000);
+}
+
+interface UseUserOptions {
+  // Background subscribers (e.g. JobStreamProvider at app root) pass true so
+  // only the active route's useUser fires the toast and redirect. Without
+  // this, every consumer's effect fires on the same query.error → N toasts.
+  silent?: boolean;
+}
+
+export function useUser({ silent = false }: UseUserOptions = {}) {
   const navigate = useNavigate();
 
   const query = useQuery<User>({
@@ -39,8 +54,10 @@ export function useUser() {
   });
 
   useEffect(() => {
+    if (silent) return;
     const message = query.error?.message;
     if (!message) return;
+    if (logoutSuppress) return;
     if (message === "UNAUTHORIZED" || message === "USER_NOT_FOUND") {
       toastWarn(
         "Not authorized",
@@ -60,7 +77,7 @@ export function useUser() {
       );
     }
     navigate("/");
-  }, [query.error, navigate]);
+  }, [query.error, navigate, silent]);
 
   return query;
 }
