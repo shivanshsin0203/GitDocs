@@ -25,11 +25,13 @@
 
 ## Demo
 
-![GitDocs dashboard with live job streaming](readme_assets/Screenshot%202026-06-05%20115141.png)
+
+
+
+https://github.com/user-attachments/assets/f323f752-4e01-4023-92c9-755796974816
+
 
 *The dashboard merges durable projects (Postgres) with in-flight jobs (Redis) over a single SSE stream - refresh-safe, multi-tab safe.*
-
-**[Watch the full walkthrough video](readme_assets/Untitled%20-%20June%2005,%202026%20at%2011.39.16.mp4)** - pick a repo, watch the live progress stream, get an AI-generated draft, drag-drop screenshots, open a real Pull Request on GitHub.
 
 ---
 
