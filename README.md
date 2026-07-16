@@ -17,7 +17,11 @@
 [![Tailwind](https://img.shields.io/badge/Tailwind-4.x-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white)](https://tailwindcss.com)
 [![Vite](https://img.shields.io/badge/Vite-8-646CFF?style=for-the-badge&logo=vite&logoColor=white)](https://vitejs.dev)
 
-[**Demo**](#demo) - [**Features**](#what-it-does) - [**Architecture**](#architecture) - [**Quick Start**](#quick-start) - [**Roadmap**](#roadmap)
+<br />
+
+[![Live at gitdocs.online](https://img.shields.io/badge/%E2%96%B6%20Live-gitdocs.online-22C55E?style=for-the-badge&logoColor=white)](https://gitdocs.online)
+
+[**Live App**](https://gitdocs.online) - [**Demo**](#demo) - [**Features**](#what-it-does) - [**Architecture**](#architecture) - [**Quick Start**](#quick-start) - [**Roadmap**](#roadmap)
 
 </div>
 
@@ -38,6 +42,8 @@ https://github.com/user-attachments/assets/f323f752-4e01-4023-92c9-755796974816
 ## What it does
 
 GitDocs is a full-stack web app that **reads your repository, understands what it is, writes a beautiful README, and ships it as a Pull Request - all from one screen.**
+
+> **Try it now, no setup required -> [gitdocs.online](https://gitdocs.online)**
 
 You sign in with GitHub, point GitDocs at any repo you own, and the system:
 
