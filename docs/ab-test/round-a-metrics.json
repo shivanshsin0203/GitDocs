@@ -1,0 +1,48 @@
+{
+  "round": "A",
+  "config": {
+    "stage1Model": "deepseek-chat",
+    "stage2Model": "deepseek-chat",
+    "resolvedTo": "deepseek-v4-flash",
+    "thinkingMode": false
+  },
+  "repos": [
+    {
+      "repo": "shivanshsin0203/2d_metaverse",
+      "files": 36,
+      "filesRead": 12,
+      "displayName": "2D Metaverse",
+      "language": "TypeScript",
+      "stage1": { "tokensIn": 1011, "cachedIn": 896, "tokensOut": 329, "costUsd": 0.000111 },
+      "stage2": { "tokensIn": 11645, "cachedIn": 1280, "tokensOut": 2111, "costUsd": 0.002046 },
+      "totals":  { "tokensIn": 12656, "tokensOut": 2440, "costUsd": 0.002156, "readmeChars": 7743 }
+    },
+    {
+      "repo": "shivanshsin0203/CrudGo",
+      "files": 8,
+      "filesRead": 6,
+      "displayName": "CRUD Go API",
+      "language": "Go",
+      "stage1": { "tokensIn": 780, "cachedIn": 640, "tokensOut": 273, "costUsd": 0.0000978 },
+      "stage2": { "tokensIn": 3919, "cachedIn": 1280, "tokensOut": 1148, "costUsd": 0.000694 },
+      "totals":  { "tokensIn": 4699, "tokensOut": 1421, "costUsd": 0.000792, "readmeChars": 4538 }
+    },
+    {
+      "repo": "shivanshsin0203/TicTacToe",
+      "files": 37,
+      "filesRead": 10,
+      "displayName": "Tic Tac Toe",
+      "language": "TypeScript",
+      "stage1": { "tokensIn": 1043, "cachedIn": 640, "tokensOut": 343, "costUsd": 0.000154 },
+      "stage2": { "tokensIn": 7393, "cachedIn": 1280, "tokensOut": 2063, "costUsd": 0.001437 },
+      "totals":  { "tokensIn": 8436, "tokensOut": 2406, "costUsd": 0.001591, "readmeChars": 8109 }
+    }
+  ],
+  "aggregate": {
+    "totalRepos": 3,
+    "totalCostUsd": 0.004539,
+    "avgCostPerRepoUsd": 0.001513,
+    "totalTokensIn": 25791,
+    "totalTokensOut": 6267
+  }
+}

@@ -1,0 +1,48 @@
+{
+  "round": "B",
+  "config": {
+    "stage1Model": "deepseek-v4-flash",
+    "stage2Model": "deepseek-v4-pro",
+    "thinkingMode": "stage1: default ON (constant added but not wired), stage2: enable_thinking=false (but model still emitted reasoning tokens)"
+  },
+  "note": "Server hot-reload during initial run interrupted 2 of 3 jobs (BullMQ stalled-check re-enqueued them). The numbers below are from the completed re-runs. CrudGo v1 also completed before the restart and showed very similar numbers (within 3%).",
+  "repos": [
+    {
+      "repo": "shivanshsin0203/2d_metaverse",
+      "files": 36,
+      "filesRead": 10,
+      "displayName": "2D Metaverse",
+      "language": "TypeScript",
+      "stage1": { "tokensIn": 1011, "cachedIn": 896, "tokensOut": 1499, "reasoningOut": 1022, "costUsd": 0.000438 },
+      "stage2": { "tokensIn": 8733, "cachedIn": 1280, "tokensOut": 2340, "reasoningOut": 685, "costUsd": 0.005282 },
+      "totals":  { "tokensIn": 9744, "tokensOut": 3839, "costUsd": 0.005721, "readmeChars": 6573 }
+    },
+    {
+      "repo": "shivanshsin0203/CrudGo",
+      "files": 8,
+      "filesRead": 6,
+      "displayName": "CRUD Go API",
+      "language": "Go",
+      "stage1": { "tokensIn": 780, "cachedIn": 768, "tokensOut": 1188, "reasoningOut": 895, "costUsd": 0.000336 },
+      "stage2": { "tokensIn": 3954, "cachedIn": 1280, "tokensOut": 2382, "reasoningOut": 1167, "costUsd": 0.003240 },
+      "totals":  { "tokensIn": 4734, "tokensOut": 3570, "costUsd": 0.003577, "readmeChars": 4935 }
+    },
+    {
+      "repo": "shivanshsin0203/TicTacToe",
+      "files": 37,
+      "filesRead": 10,
+      "displayName": "Tic Tac Toe Game",
+      "language": "TypeScript",
+      "stage1": { "tokensIn": 1043, "cachedIn": 1024, "tokensOut": 536, "reasoningOut": 151, "costUsd": 0.000156 },
+      "stage2": { "tokensIn": 7735, "cachedIn": 1280, "tokensOut": 3257, "reasoningOut": 1455, "costUsd": 0.005646 },
+      "totals":  { "tokensIn": 8778, "tokensOut": 3793, "costUsd": 0.005802, "readmeChars": 7477 }
+    }
+  ],
+  "aggregate": {
+    "totalRepos": 3,
+    "totalCostUsd": 0.01510,
+    "avgCostPerRepoUsd": 0.005033,
+    "totalTokensIn": 23256,
+    "totalTokensOut": 11202
+  }
+}
